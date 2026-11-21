@@ -3,23 +3,11 @@
  * parseNfceText.js
  * Parser nativo de texto copiado da página da SEFAZ-RJ (resultadoQRCode2.faces).
  *
- * O texto copiado do portal da SEFAZ-RJ segue o formato:
- *
- *   RFC COMERCIO DE MIUDEZAS LTDA
- *   CNPJ: 26.514.797/0014-53
- *   ...
- *   CREME LEITE 20 P.1.C.200 (Código: 255929 )
- *   Qtde.:6  UN: UN  Vl. Unit.:   3,49	Vl. Total
- *   20,94
- *   ...
- *   Valor a pagar R$:175,59
- *   ...
- *   Emissão: 20/11/2026 09:53:36-03:00
- *   Chave de acesso:
- *   3326 1126 5147 9700 1453 6510 5000 0067 0910 0006 7345
+ * Abordagem linha a linha, resiliente a tabulações (\t), espaços duplos
+ * e quebras de linha do celular.
  */
 
-/** Normaliza número brasileiro "3,49" -> 3.49, "1.250,50" -> 1250.50 */
+/** Normaliza número brasileiro: "3,49" → 3.49, "1.250,50" → 1250.50 */
 function normalizeBRLNumber(text) {
   if (!text) return 0
   const cleaned = String(text).replace(/[^\d,.-]/g, '').trim()
@@ -39,35 +27,31 @@ function round2(v) {
   return Math.round(v * 100) / 100
 }
 
-/**
- * Extrai informações da chave de acesso: 44 dígitos.
- * O texto pode ter espaços a cada 4 dígitos.
- */
+/** Extrai a chave de acesso (44 dígitos) após "Chave de acesso:" */
 function extractAccessKey(text) {
-  const match = text.match(/Chave de\s*acesso\s*:\s*\n?\s*([\d\s]{40,60})/i)
+  const match = text.match(/Chave\s*de\s*acesso\s*:/i)
   if (!match) return null
-  const digits = match[1].replace(/\s/g, '')
-  return digits.length === 44 ? digits : null
+  const after = text.slice(match.index + match[0].length)
+  const digits = after.replace(/\D/g, '')
+  return digits.length >= 44 ? digits.slice(0, 44) : null
 }
 
-/** Extrai a razão social: primeira linha válida antes de "CNPJ:" */
+/** Extrai o nome do estabelecimento: linha imediatamente anterior à que começa com "CNPJ:" */
 function extractStoreName(text) {
-  const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0)
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    // Pula cabeçalhos do documento auxiliar
+    if (/^CNPJ/i.test(lines[i])) {
+      if (i > 0) {
+        return lines[i - 1].replace(/\(Código\s*:\s*[^)]+\)/i, '').trim()
+      }
+    }
+  }
+  // Fallback: primeira linha substancial que não seja cabeçalho
+  for (const line of lines) {
     if (/DOCUMENTO\s*AUXILIAR/i.test(line)) continue
     if (/^DANFE/i.test(line)) continue
     if (/^NFC-e/i.test(line)) continue
-    if (/CNPJ/.test(line)) {
-      // A linha anterior (ou a atual se não tiver CNPJ na mesma linha) é o nome
-      if (i > 0) return lines[i - 1]
-      // Se o CNPJ está na mesma linha, tenta extrair o nome antes
-      const namePart = line.split(/CNPJ/i)[0].trim()
-      if (namePart.length > 3) return namePart
-      continue
-    }
-    // Primeira linha substancial que não seja cabeçalho
+    if (/^CNPJ/i.test(line)) continue
     if (line.length > 3 && !/^[\d\s\-:/]+$/.test(line)) {
       return line
     }
@@ -75,9 +59,9 @@ function extractStoreName(text) {
   return ''
 }
 
-/** Extrai data de emissão: "Emissão: DD/MM/YYYY HH:MM:SS-TZ" */
+/** Extrai data de emissão: "Emissão: DD/MM/YYYY" → "YYYY-MM-DD" */
 function extractIssueDate(text) {
-  const match = text.match(/Emissão\s*:\s*(\d{2})\/(\d{2})\/(\d{4})/i)
+  const match = text.match(/Emiss[ãa]o:\s*(\d{2})\/(\d{2})\/(\d{4})/i)
   if (!match) return null
   const [, d, m, y] = match
   return `${y}-${m}-${d}`
@@ -93,54 +77,61 @@ function extractTotalAmount(text) {
 }
 
 /**
- * Extrai itens da nota fiscal.
+ * Extrai itens por âncora "Qtde.".
  * Formato esperado:
  *   DESCRICAO (Código: 12345 )
  *   Qtde.:6  UN: UN  Vl. Unit.:   3,49	Vl. Total
  *   20,94
  */
 function extractItems(text) {
+  // Normaliza quebras de linha do Windows/mobile e divide em linhas
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  const lines = normalized.split('\n').map((l) => l.trim()).filter(Boolean)
+
   const items = []
-  const lines = text.split('\n')
+
+  // Regex da âncora Qtde.
+  const qtdeRegex = /Qtde\.?\s*:\s*([\d.,]+)\s+UN\s*:\s*([A-Za-z0-9ãçõé]+)\s+Vl\.?\s*Unit\.?\s*:\s*([\d.,]+)/i
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
+    const m = line.match(qtdeRegex)
+    if (!m) continue
 
-    // Detecta linha com "(Código: ...)"
-    const codeMatch = line.match(/\(Código\s*:\s*([^)]+)\)/i)
-    if (!codeMatch) continue
+    // Descrição: linha anterior (i-1), remove "(Código: ...)" do final
+    let description = ''
+    if (i > 0) {
+      description = lines[i - 1].replace(/\(Código\s*:\s*[^)]+\)/i, '').trim()
+    }
+    if (!description || description.length < 2) continue
 
-    const rawDesc = line.replace(/\(Código\s*:\s*[^)]+\)/i, '').trim()
-    if (!rawDesc || rawDesc.length < 2) continue
+    const quantity = normalizeBRLNumber(m[1])
+    const unit = m[2]
+    const unitPrice = normalizeBRLNumber(m[3])
 
-    // Próxima linha deve conter Qtde/UN/Vl. Unit.
-    const qtyLine = lines[i + 1] || ''
-    const qtyMatch = qtyLine.match(/Qtde\s*:\s*([\d.,]+)/i)
-    const unitMatch = qtyLine.match(/UN\s*:\s*(\S+)/i)
-    const priceMatch = qtyLine.match(/Vl\.\s*Unit\.\s*:\s*([\d.,]+)/i)
-
-    if (!qtyMatch) continue
-
-    const quantity = normalizeBRLNumber(qtyMatch[1])
-    const unitPrice = priceMatch ? normalizeBRLNumber(priceMatch[1]) : 0
-
-    // O valor total pode estar na mesma linha (após Vl. Total) ou na linha seguinte
+    // Valor total: verifica se há após "Vl. Total" na mesma linha
     let totalPrice = 0
-    const totalSameLine = qtyLine.match(/Vl\.\s*Total\s*:\s*([\d.,]+)/i)
+    const totalSameLine = line.match(/Vl\.?\s*Total\.?\s*:?\s*([\d.,]+)/i)
     if (totalSameLine) {
       totalPrice = normalizeBRLNumber(totalSameLine[1])
-    } else if (lines[i + 2]) {
+    } else if (lines[i + 1]) {
       // Valor total na linha seguinte
-      const nextLine = lines[i + 2].trim()
+      const nextLine = lines[i + 1]
       const totalNextMatch = nextLine.match(/^([\d.,]+)$/)
       if (totalNextMatch) {
         totalPrice = normalizeBRLNumber(totalNextMatch[1])
       }
     }
 
+    // Fallback: quantidade × preço unitário
+    if (!totalPrice && quantity > 0 && unitPrice > 0) {
+      totalPrice = round2(quantity * unitPrice)
+    }
+
     items.push({
-      raw_description: rawDesc,
+      raw_description: description,
       quantity,
+      unit: unit,
       unit_price: unitPrice,
       total_price: totalPrice,
     })
@@ -158,35 +149,18 @@ function extractItems(text) {
   return uniqueItems
 }
 
-/**
- * Inferência inteligente de embalagem a partir da descrição.
- * Detecta pesos/volumes comuns:
- *   395 → 395g
- *   200M → 200ml
- *   1L → 1000ml
- *   1,05K → 1050g
- *   100G → 100g
- *   50U / 20UN → 50un / 20un
- *
- * Retorna { packageSize, baseUnit, purchaseUnit } sugerido.
- */
+/** Inferência inteligente de embalagem a partir da descrição */
 function inferPackageInfo(description) {
   if (!description) return { packageSize: 1, baseUnit: 'un', purchaseUnit: 'un' }
 
   const desc = description.toUpperCase()
 
-  // Padrão: número + sufixo (ex: 395G, 200ML, 1L, 1,05KG, 50U, 20UN)
   const patterns = [
-    // Kg / K
     [/([\d.,]+)\s*KG\b/i, 'g', (v) => Math.round(v * 1000)],
     [/([\d.,]+)\s*K\b/i, 'g', (v) => Math.round(v * 1000)],
-    // g / G
     [/([\d.,]+)\s*G\b/i, 'g', (v) => v],
-    // ml / ml
     [/([\d.,]+)\s*ML\b/i, 'ml', (v) => v],
-    // L
     [/([\d.,]+)\s*L\b/i, 'ml', (v) => Math.round(v * 1000)],
-    // un / U
     [/([\d.,]+)\s*UN\b/i, 'un', (v) => v],
     [/([\d.,]+)\s*U\b/i, 'un', (v) => v],
   ]
@@ -206,7 +180,6 @@ function inferPackageInfo(description) {
     }
   }
 
-  // Se encontrou apenas um número isolado (ex: "395" sem sufixo), assume gramas
   const isolatedNumber = desc.match(/\b(\d{2,4})\b/)
   if (isolatedNumber) {
     const value = parseInt(isolatedNumber[1], 10)
@@ -218,10 +191,7 @@ function inferPackageInfo(description) {
   return { packageSize: 1, baseUnit: 'un', purchaseUnit: 'un' }
 }
 
-/**
- * Função principal: parseia texto copiado da página da SEFAZ-RJ.
- * Retorna objeto compatível com o fluxo de conciliação do painel de gestão.
- */
+/** Função principal: parseia texto copiado da página da SEFAZ-RJ */
 export function parseNfceCopiedText(rawText) {
   if (!rawText || !rawText.trim()) {
     return {
@@ -237,6 +207,12 @@ export function parseNfceCopiedText(rawText) {
   const totalAmount = extractTotalAmount(rawText)
   const items = extractItems(rawText)
 
+  // Fallback do total: soma dos itens se não encontrou no texto
+  let finalTotal = totalAmount
+  if (!finalTotal && items.length > 0) {
+    finalTotal = round2(items.reduce((sum, it) => sum + it.total_price, 0))
+  }
+
   if (items.length === 0) {
     return {
       success: false,
@@ -244,7 +220,7 @@ export function parseNfceCopiedText(rawText) {
       accessKey: accessKey || '',
       storeName: storeName || 'Estabelecimento não identificado',
       issueDate,
-      totalAmount,
+      totalAmount: finalTotal,
       debugHint: rawText.substring(0, 300),
     }
   }
@@ -254,7 +230,7 @@ export function parseNfceCopiedText(rawText) {
     accessKey: accessKey || '',
     storeName: storeName || 'Estabelecimento não identificado',
     issueDate,
-    totalAmount,
+    totalAmount: finalTotal,
     items: items.map((item) => ({
       ...item,
       suggestedPackage: inferPackageInfo(item.raw_description),
