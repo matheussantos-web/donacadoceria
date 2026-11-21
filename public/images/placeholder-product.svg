@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 533" width="400" height="533">
+  <rect width="400" height="533" fill="#F9EFEF"/>
+  <circle cx="200" cy="210" r="70" fill="none" stroke="#C46D7C" stroke-width="3" opacity="0.25"/>
+  <circle cx="200" cy="210" r="26" fill="#C46D7C"/>
+  <path d="M200 145 L200 275 M135 210 L265 210" stroke="#C46D7C" stroke-width="2" stroke-linecap="round" opacity="0.15"/>
+  <text x="200" y="480" font-family="system-ui, sans-serif" font-size="14" fill="#7D6462" text-anchor="middle" font-weight="500">Dona Cá Doceria</text>
+</svg>

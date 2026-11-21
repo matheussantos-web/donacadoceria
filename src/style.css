@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+
+  --color-brand-bg: #FDF9F9;
+  --color-brand-surface: #FFFFFF;
+  --color-brand-surface-alt: #F9EFEF;
+  --color-brand-primary: #C46D7C;
+  --color-brand-primary-hover: #A85665;
+  --color-brand-secondary: #F29CAB;
+  --color-brand-chocolate: #7A4426;
+  --color-brand-text-primary: #3B231E;
+  --color-brand-text-muted: #7D6462;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-brand-bg text-brand-text-primary min-h-screen;
+    margin: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-medium text-brand-text-primary;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 bg-brand-primary text-white font-medium rounded-lg
+           hover:bg-brand-primary-hover focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2
+           transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 border-2 border-brand-primary text-brand-primary font-medium rounded-lg
+           hover:bg-brand-primary hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2
+           transition-colors duration-200;
+  }
+
+  .card {
+    @apply bg-brand-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-brand-surface border border-gray-200 rounded-lg text-brand-text-primary
+           placeholder:text-brand-text-muted/60
+           focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent
+           transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
