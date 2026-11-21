@@ -341,6 +341,16 @@ watch(
 
 const recipeTotalCost = computed(() => form.totalCost)
 
+const formatPrice = (price) => {
+  if (price == null || Number.isNaN(Number(price))) return 'R$ 0,00'
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(price))
+}
+
+const formatNumber = (num) => {
+  if (num == null || Number.isNaN(Number(num))) return '0'
+  return Number(num).toLocaleString('pt-BR')
+}
+
 onMounted(() => {
   loadRecipes()
   loadIngredients()
