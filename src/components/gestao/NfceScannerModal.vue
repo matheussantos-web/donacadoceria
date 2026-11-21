@@ -110,7 +110,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { productService } from '@/services/products'
+import { Html5Qrcode } from 'html5-qrcode'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -118,7 +118,6 @@ const props = defineProps({
 
 const emit = defineEmits(['nfce-scanned'])
 
-const Html5Qrcode = window.Html5Qrcode
 const qrReader = ref(null)
 const isScannerReady = ref(false)
 const isCameraOn = ref(false)
