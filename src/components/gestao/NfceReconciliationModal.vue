@@ -464,7 +464,6 @@ async function confirmReconciliation() {
       }
 
       // Validação obrigatória: ingredient_id nunca pode ser "__NEW__", vazio ou não-UUID
-      console.log('[NfceReconciliation] Item payload:', item)
       const isValidUuid = UUID_REGEX.test(String(ingredientId))
       if (!isValidUuid) {
         throw new Error(
@@ -496,25 +495,41 @@ async function confirmReconciliation() {
       if (itemErr) throw itemErr
 
       // Atualizar estoque e custo do insumo
-      const { data: ing, error: getIngErr } = await ingredientsService.get(finalIngredientId)
+      const { data: existingIng, error: getIngErr } = await ingredientsService.get(finalIngredientId)
       if (getIngErr) throw getIngErr
 
-      const quantityBaseUnit = item.quantity * (item.newIngredientMode ? item.newPackageSize : ing.packageSize)
-      const newStock = toNum(ing.stockQuantity) + quantityBaseUnit
+      const quantityBaseUnit = item.quantity * (item.newIngredientMode ? item.newPackageSize : existingIng?.packageSize ?? 1)
+      const currentStock = Number(existingIng?.stock_quantity ?? existingIng?.stockQuantity ?? 0)
+      const newStock = currentStock + quantityBaseUnit
 
       // last_unit_cost = preço pago por embalagem nesta nota
-      const newLastUnitCost = item.unit_price * (item.newIngredientMode ? item.newPackageSize : ing.packageSize)
+      const newLastUnitCost = item.unit_price * (item.newIngredientMode ? item.newPackageSize : existingIng?.packageSize ?? 1)
 
-      await ingredientsService.update(finalIngredientId, {
-        ...ing,
-        stock_quantity: newStock,
-        last_unit_cost: newLastUnitCost,
-      })
+      if (existingIng) {
+        // Insumo já existente: soma a quantidade comprada ao saldo atual
+        await ingredientsService.update(finalIngredientId, {
+          ...existingIng,
+          stock_quantity: newStock,
+          last_unit_cost: newLastUnitCost,
+        })
+      } else if (item.newIngredientMode) {
+        // Insumo recém-criado nesta nota: já foi inserido com stock 0, define o estoque inicial da compra
+        await supabase
+          .from('ingredients')
+          .update({
+            stock_quantity: newStock,
+            last_unit_cost: newLastUnitCost,
+          })
+          .eq('id', finalIngredientId)
+      }
     }
 
     // 4. Disparar recálculo em cascata
     await recalculateCostsService.recalculateAllCosts()
 
+    // Recarrega a lista de insumos do banco para refletir os novos itens e saldos reais
+    await loadIngredients()
+    emit('saved')
     emit('confirmed', { id: createdInvoiceId, access_key: props.nfce.accessKey })
     closeModal()
   } catch (err) {
