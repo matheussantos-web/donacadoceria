@@ -243,6 +243,8 @@ const confirmableItems = computed(() =>
 
 async function confirmReconciliation() {
   saving.value = true
+  let createdInvoiceId = null  // declarada fora do try para o catch ter acesso
+
   try {
     // 1. Verificar duplicata de access_key (usando maybeSingle para evitar erro 406 quando não existe)
     const { data: existingInvoice, error: checkError } = await supabase
@@ -267,13 +269,13 @@ async function confirmReconciliation() {
     }
 
     // 2. Gerar UUID explícito no frontend para evitar dependência de .select('id').single()
-    const invoiceId = crypto.randomUUID()
+    createdInvoiceId = crypto.randomUUID()
 
     // Inserir nota fiscal com ID explícito
     const { error: invoiceError } = await supabase
       .from('invoices')
       .insert({
-        id: invoiceId,
+        id: createdInvoiceId,
         access_key: props.nfce.accessKey,
         store_name: props.nfce.storeName,
         issue_date: props.nfce.issueDate,
@@ -314,18 +316,25 @@ async function confirmReconciliation() {
         ingredientId = newIngredientId
       }
 
-      // Validação: ingredient_id nunca pode ser "__NEW__", vazio ou não-UUID
+      // Validação obrigatória: ingredient_id nunca pode ser "__NEW__", vazio ou não-UUID
       const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(ingredientId))
       if (!isValidUuid) {
         throw new Error(`Insumo inválido para "${item.raw_description}": selecione um insumo existente ou cadastre um novo.`)
       }
 
+      // Guard final: garantir que __NEW__ não chegue ao banco
+      if (ingredientId === '__NEW__' || !ingredientId) {
+        throw new Error(`ingredient_id inválido para "${item.raw_description}". Verifique se o insumo foi vinculado corretamente.`)
+      }
+
+      const finalIngredientId = ingredientId
+
       // Inserir item da nota com invoice_id e ingredient_id explícitos
       const { error: itemErr } = await supabase
         .from('invoice_items')
         .insert({
-          invoice_id: invoiceId,
-          ingredient_id: ingredientId,
+          invoice_id: createdInvoiceId,
+          ingredient_id: finalIngredientId,
           raw_description: item.raw_description,
           quantity: item.quantity,
           unit_price: item.unit_price,
@@ -335,7 +344,7 @@ async function confirmReconciliation() {
       if (itemErr) throw itemErr
 
       // Atualizar estoque e custo do insumo
-      const { data: ing, error: getIngErr } = await ingredientsService.get(ingredientId)
+      const { data: ing, error: getIngErr } = await ingredientsService.get(finalIngredientId)
       if (getIngErr) throw getIngErr
 
       const quantityBaseUnit = item.quantity * (item.newIngredientMode ? item.newPackageSize : ing.packageSize)
@@ -344,7 +353,7 @@ async function confirmReconciliation() {
       // last_unit_cost = preço pago por embalagem nesta nota
       const newLastUnitCost = item.unit_price * (item.newIngredientMode ? item.newPackageSize : ing.packageSize)
 
-      await ingredientsService.update(ingredientId, {
+      await ingredientsService.update(finalIngredientId, {
         ...ing,
         stock_quantity: newStock,
         last_unit_cost: newLastUnitCost,
@@ -354,14 +363,14 @@ async function confirmReconciliation() {
     // 4. Disparar recálculo em cascata
     await recalculateCostsService.recalculateAllCosts()
 
-    emit('confirmed', { id: invoiceId, access_key: props.nfce.accessKey })
+    emit('confirmed', { id: createdInvoiceId, access_key: props.nfce.accessKey })
     closeModal()
   } catch (err) {
     // Rollback automático: se a nota já foi inserida no banco mas algo falhou depois,
     // remove o cabeçalho órfão para permitir nova tentativa sem trava de duplicidade
     try {
-      if (invoiceId) {
-        await supabase.from('invoices').delete().eq('id', invoiceId)
+      if (createdInvoiceId) {
+        await supabase.from('invoices').delete().eq('id', createdInvoiceId)
       }
     } catch (rollbackErr) {
       console.error('[NfceReconciliation] Erro no rollback:', rollbackErr.message)
