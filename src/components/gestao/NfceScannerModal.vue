@@ -150,7 +150,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from "vue"
-import { Html5Qrcode, Html5QrcodeSupportedFormats, Html5QrcodeScannerState } from "html5-qrcode"
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode"
 import { parseNfceCopiedText } from "@/utils/parseNfceText"
 
 const props = defineProps({
@@ -169,6 +169,10 @@ const parsedNfce = ref(null)
 
 const cameraModeActive = ref(false)
 const showPasteMode = ref(false)
+
+// Controle de estado real do scanner para evitar "Cannot stop, scanner is not running or paused."
+let isScannerRunning = false
+let startPromise = null
 
 const formatPrice = (price) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price || 0)
@@ -236,7 +240,7 @@ async function startScanner() {
       scanError.value = "Elemento da câmera não encontrado. Tente novamente."
       return
     }
-    await qrReader.value.start(
+    startPromise = qrReader.value.start(
       { facingMode: "environment" },
       {
         fps: 15,
@@ -254,40 +258,45 @@ async function startScanner() {
       onScanSuccess,
       onScanFailure
     )
+    await startPromise
+    isScannerRunning = true
     isCameraOn.value = true
     scanning.value = true
   } catch (err) {
+    isScannerRunning = false
     scanError.value = "Não foi possível acessar a câmera. Verifique as permissões."
     console.error(err)
+  } finally {
+    startPromise = null
   }
 }
 
 async function stopScanner() {
-  if (!qrReader.value || !isCameraOn.value) return
+  if (startPromise) {
+    try { await startPromise } catch {}
+  }
+  if (!qrReader || !isScannerRunning) return
   try {
-    const state = qrReader.value.getState()
-    if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
-      await qrReader.value.stop()
-    }
-    await qrReader.value.clear()
+    await qrReader.value.stop()
+    qrReader.value.clear()
+  } catch {} finally {
+    isScannerRunning = false
     isCameraOn.value = false
     scanning.value = false
-  } catch (err) {
-    console.error(err)
   }
 }
 
 function stopAndClearScanner() {
   if (!qrReader.value) return
   try {
-    const state = qrReader.value.getState()
-    if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+    if (isScannerRunning) {
       qrReader.value.stop()
     }
     qrReader.value.clear()
   } catch (_) {
     // ignora erro se o scanner não estiver rodando
   } finally {
+    isScannerRunning = false
     isCameraOn.value = false
     scanning.value = false
   }
