@@ -96,12 +96,14 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue"
+import { useRoute } from "vue-router"
 import logoImg from "@/assets/logo-donaca.jpg"
 import IngredientsManager from "@/components/gestao/IngredientsManager.vue"
 import RecipesManager from "@/components/gestao/RecipesManager.vue"
 import PricingManager from "@/components/gestao/PricingManager.vue"
 import NfceScannerModal from "@/components/gestao/NfceScannerModal.vue"
 import NfceReconciliationModal from "@/components/gestao/NfceReconciliationModal.vue"
+import { parseNfceCopiedText } from "@/utils/parseNfceText"
 import { ingredientsService } from "@/services/ingredients"
 import { recipesService } from "@/services/recipes"
 import { pricedProductsService } from "@/services/recipes"
@@ -121,6 +123,7 @@ const activeModule = ref("dashboard")
 const showScanner = ref(false)
 const showReconciliation = ref(false)
 const pendingNfce = ref(null)
+const route = useRoute()
 
 const ingredients = ref([])
 const recipes = ref([])
@@ -143,7 +146,66 @@ function moduleClass(module) {
 
 onMounted(() => {
   loadData()
+  handleSharedContent()
 })
+
+async function handleSharedContent() {
+  const sharedText = route.query.text || route.query.url
+  if (!sharedText) return
+
+  // Limpa os query params da URL
+  if (route.query.text || route.query.url) {
+    window.history.replaceState({}, document.title, route.path)
+  }
+
+  // Se é uma URL ou chave de acesso, chama a API
+  const isUrl = String(sharedText).startsWith("http")
+  const isAccessKey = /^\d{44}$/.test(String(sharedText).replace(/\s/g, ""))
+
+  if (isUrl || isAccessKey) {
+    try {
+      const response = await fetch("/api/parse-nfce", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: sharedText }),
+      })
+
+      if (!response.ok) {
+        const errData = await response.json()
+        console.error("[Share] Erro da API:", errData.error)
+        return
+      }
+
+      const data = await response.json()
+      if (data.success && data.items && data.items.length > 0) {
+        pendingNfce.value = data
+        showScanner.value = false
+        showReconciliation.value = true
+      }
+    } catch (err) {
+      console.error("[Share] Erro ao processar conteúdo compartilhado:", err.message)
+    }
+    return
+  }
+
+  // Senão, trata como texto copiado da SEFAZ-RJ
+  const result = parseNfceCopiedText(sharedText)
+  if (result.success && result.items && result.items.length > 0) {
+    pendingNfce.value = {
+      accessKey: result.accessKey,
+      storeName: result.storeName,
+      issueDate: result.issueDate,
+      totalAmount: result.totalAmount,
+      items: result.items.map((item) => ({
+        ...item,
+        suggestedPackage: item.suggestedPackage || { packageSize: 1, baseUnit: "un", purchaseUnit: "un" },
+      })),
+      rawUrl: "texto-compartilhado",
+    }
+    showScanner.value = false
+    showReconciliation.value = true
+  }
+}
 
 async function loadData() {
   try {

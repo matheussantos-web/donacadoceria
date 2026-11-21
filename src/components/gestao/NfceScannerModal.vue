@@ -91,6 +91,12 @@
         ></textarea>
         <div class="flex gap-2">
           <button
+            @click="pasteFromClipboard"
+            class="flex-1 btn-primary py-2 text-sm font-medium"
+          >
+            Colar da Área de Transferência e Processar
+          </button>
+          <button
             @click="processPasteInput"
             class="flex-1 btn-primary py-2 text-sm font-medium"
           >
@@ -300,6 +306,21 @@ async function processPasteInput() {
   }
 
   openReconciliation(parsedNfce.value)
+}
+
+async function pasteFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText()
+    if (!text || !text.trim()) {
+      scanError.value = 'Área de transferência vazia.'
+      return
+    }
+    pasteInput.value = text.trim()
+    await processPasteInput()
+  } catch (err) {
+    scanError.value = 'Não foi possível acessar a área de transferência. Verifique as permissões do navegador.'
+    console.error(err)
+  }
 }
 
 async function processNfceApi(input) {

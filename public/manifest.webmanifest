@@ -1,6 +1,6 @@
 {
-  "name": "Dona Cá Doceria",
-  "short_name": "Dona Cá Doceria",
+  "name": "Dona C\u00e1 Doceria",
+  "short_name": "Dona C\u00e1 Doceria",
   "description": "Doces, bolos e sobremesas de confeitaria artesanal",
   "display": "standalone",
   "background_color": "#FFFFFF",
@@ -8,6 +8,15 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "pt-BR",
+  "share_target": {
+    "action": "/gestao",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "/icon-192.png",
