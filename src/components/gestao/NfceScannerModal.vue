@@ -150,7 +150,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from "vue"
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode"
+import { Html5Qrcode, Html5QrcodeSupportedFormats, Html5QrcodeScannerState } from "html5-qrcode"
 import { parseNfceCopiedText } from "@/utils/parseNfceText"
 
 const props = defineProps({
@@ -265,7 +265,10 @@ async function startScanner() {
 async function stopScanner() {
   if (!qrReader.value || !isCameraOn.value) return
   try {
-    await qrReader.value.stop()
+    const state = qrReader.value.getState()
+    if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+      await qrReader.value.stop()
+    }
     await qrReader.value.clear()
     isCameraOn.value = false
     scanning.value = false
@@ -276,14 +279,18 @@ async function stopScanner() {
 
 function stopAndClearScanner() {
   if (!qrReader.value) return
-  qrReader.value
-    .stop()
-    .then(() => qrReader.value.clear())
-    .catch(() => {})
-    .finally(() => {
-      isCameraOn.value = false
-      scanning.value = false
-    })
+  try {
+    const state = qrReader.value.getState()
+    if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+      qrReader.value.stop()
+    }
+    qrReader.value.clear()
+  } catch (_) {
+    // ignora erro se o scanner não estiver rodando
+  } finally {
+    isCameraOn.value = false
+    scanning.value = false
+  }
 }
 
 function onScanSuccess(decodedText) {
