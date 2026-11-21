@@ -244,12 +244,14 @@ const confirmableItems = computed(() =>
 async function confirmReconciliation() {
   saving.value = true
   try {
-    // 1. Verificar duplicata de access_key
-    const { data: existingInvoice, error: checkErr } = await supabase
+    // 1. Verificar duplicata de access_key (usando maybeSingle para evitar erro 406 quando não existe)
+    const { data: existingInvoice, error: checkError } = await supabase
       .from('invoices')
       .select('id, access_key')
       .eq('access_key', props.nfce.accessKey)
-      .single()
+      .maybeSingle()
+
+    if (checkError) throw checkError
 
     if (existingInvoice) {
       duplicateWarning.value = existingInvoice
@@ -257,8 +259,8 @@ async function confirmReconciliation() {
       return
     }
 
-    // 2. Inserir nota fiscal
-    const { data: invoice, error: invErr } = await supabase
+    // 2. Inserir nota fiscal e garantir que o id seja retornado
+    const { data: createdInvoice, error: invoiceError } = await supabase
       .from('invoices')
       .insert({
         access_key: props.nfce.accessKey,
@@ -267,10 +269,14 @@ async function confirmReconciliation() {
         total_amount: props.nfce.totalAmount,
         raw_url: props.nfce.rawUrl,
       })
-      .select()
+      .select('id')
       .single()
 
-    if (invErr) throw invErr
+    if (invoiceError || !createdInvoice?.id) {
+      throw invoiceError || new Error('Falha ao gerar ID da nota fiscal')
+    }
+
+    const invoiceId = createdInvoice.id
 
     // 3. Processar cada item
     for (const item of nfceItems.value) {
@@ -278,7 +284,7 @@ async function confirmReconciliation() {
 
       let ingredientId = item.selectedIngredientId
 
-      // Se modo "novo insumo", criar o insumo primeiro
+      // Se modo "novo insumo", criar o insumo primeiro (antes de vincular ao invoice_item)
       if (item.newIngredientMode && item.newIngredientName) {
         const { data: newIng, error: newIngErr } = await ingredientsService.create({
           name: item.newIngredientName,
@@ -296,15 +302,19 @@ async function confirmReconciliation() {
 
       if (!ingredientId) continue
 
-      // Inserir item da nota
-      await invoiceItemsService.create({
-        invoice_id: invoice.id,
-        ingredient_id: ingredientId,
-        raw_description: item.raw_description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.total_price,
-      })
+      // Inserir item da nota com invoice_id garantido
+      const { error: itemErr } = await supabase
+        .from('invoice_items')
+        .insert({
+          invoice_id: invoiceId,
+          ingredient_id: ingredientId,
+          raw_description: item.raw_description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+        })
+
+      if (itemErr) throw itemErr
 
       // Atualizar estoque e custo do insumo
       const { data: ing, error: getIngErr } = await ingredientsService.get(ingredientId)
@@ -326,7 +336,7 @@ async function confirmReconciliation() {
     // 4. Disparar recálculo em cascata
     await recalculateCostsService.recalculateAllCosts()
 
-    emit('confirmed', invoice)
+    emit('confirmed', createdInvoice)
     closeModal()
   } catch (err) {
     console.error('[NfceReconciliation] Erro:', err)
