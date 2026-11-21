@@ -266,24 +266,22 @@ async function confirmReconciliation() {
       }
     }
 
-    // 2. Inserir nota fiscal e garantir que o id seja retornado
-    const { data: createdInvoice, error: invoiceError } = await supabase
+    // 2. Gerar UUID explícito no frontend para evitar dependência de .select('id').single()
+    const invoiceId = crypto.randomUUID()
+
+    // Inserir nota fiscal com ID explícito
+    const { error: invoiceError } = await supabase
       .from('invoices')
       .insert({
+        id: invoiceId,
         access_key: props.nfce.accessKey,
         store_name: props.nfce.storeName,
         issue_date: props.nfce.issueDate,
         total_amount: props.nfce.totalAmount,
         raw_url: props.nfce.rawUrl,
       })
-      .select('id')
-      .single()
 
-    if (invoiceError || !createdInvoice?.id) {
-      throw invoiceError || new Error('Falha ao gerar ID da nota fiscal')
-    }
-
-    const invoiceId = createdInvoice.id
+    if (invoiceError) throw invoiceError
 
     // 3. Processar cada item
     for (const item of nfceItems.value) {
@@ -309,7 +307,7 @@ async function confirmReconciliation() {
 
       if (!ingredientId) continue
 
-      // Inserir item da nota com invoice_id garantido
+      // Inserir item da nota com invoice_id explícito
       const { error: itemErr } = await supabase
         .from('invoice_items')
         .insert({
@@ -343,13 +341,14 @@ async function confirmReconciliation() {
     // 4. Disparar recálculo em cascata
     await recalculateCostsService.recalculateAllCosts()
 
-    emit('confirmed', createdInvoice)
+    emit('confirmed', { id: invoiceId, access_key: props.nfce.accessKey })
     closeModal()
   } catch (err) {
-    // Rollback: se a nota já foi inserida no banco mas algo falhou depois, remove o cabeçalho órfão
+    // Rollback automático: se a nota já foi inserida no banco mas algo falhou depois,
+    // remove o cabeçalho órfão para permitir nova tentativa sem trava de duplicidade
     try {
-      if (createdInvoice && createdInvoice.id) {
-        await supabase.from('invoices').delete().eq('id', createdInvoice.id)
+      if (invoiceId) {
+        await supabase.from('invoices').delete().eq('id', invoiceId)
       }
     } catch (rollbackErr) {
       console.error('[NfceReconciliation] Erro no rollback:', rollbackErr.message)
