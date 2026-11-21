@@ -464,6 +464,7 @@ async function confirmReconciliation() {
       }
 
       // Validação obrigatória: ingredient_id nunca pode ser "__NEW__", vazio ou não-UUID
+      console.log('[NfceReconciliation] Item payload:', item)
       const isValidUuid = UUID_REGEX.test(String(ingredientId))
       if (!isValidUuid) {
         throw new Error(
