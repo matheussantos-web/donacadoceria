@@ -110,7 +110,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { Html5Qrcode } from 'html5-qrcode'
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -143,7 +143,10 @@ async function initScanner() {
     return
   }
   try {
-    qrReader.value = new Html5Qrcode('qr-reader')
+    qrReader.value = new Html5Qrcode('qr-reader', {
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      verbose: false,
+    })
     isScannerReady.value = true
   } catch (err) {
     scanError.value = 'Erro ao inicializar o leitor de QR Code.'
@@ -165,8 +168,16 @@ async function startScanner() {
     await qrReader.value.start(
       { facingMode: 'environment' },
       {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
+        fps: 15,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.72)
+          return { width: size, height: size }
+        },
+        videoConstraints: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
       },
       onScanSuccess,
       onScanFailure

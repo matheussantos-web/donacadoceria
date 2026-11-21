@@ -3,40 +3,57 @@
  * api/parse-nfce.js
  * Vercel Serverless Function — Parser de NFC-e (SEFAZ-RJ)
  *
- * Recebe a URL do QR Code da NFC-e, faz o fetch no servidor (evitando CORS),
- * extrai dados do estabelecimento, data, chave de acesso (44 dígitos) e itens,
+ * Recebe a URL do QR Code da NFC-e ou a chave de acesso (44 dígitos),
+ * faz o fetch no servidor (evitando CORS), segue redirecionamentos/iframes
+ * da SEFAZ-RJ, extrai dados do estabelecimento, data, chave de acesso e itens,
  * retornando um JSON limpo para o painel de gestão.
- *
- * Ajustes para layout oficial da NFC-e Rio de Janeiro (fazenda.rj.gov.br):
- * - Timeout de 12 segundos (AbortController)
- * - Suporte a redirecionamentos e cookies básicos
- * - Seletores específicos da SEFAZ-RJ: #tabResult tr, .txtTit, .Rqtd, .RUN, .RvlUnit, .valor
- * - Normalização segura de números brasileiros ("1.250,50" -> 1250.50)
  */
 
 import { load } from 'cheerio'
 
 function normalizeBRLNumber(text) {
   if (!text) return 0
-  // Remove tudo exceto digitos, virgula e ponto
   const cleaned = String(text).replace(/[^\d,.-]/g, '').trim()
   if (!cleaned) return 0
-  // Se tem virgula, e formato brasileiro: ponto = separador milhar, virgula = decimal
   if (cleaned.includes(',')) {
-    // Remove pontos (separador de milhar)
     const withoutDots = cleaned.replace(/\./g, '')
-    // Substitui virgula por ponto
     const normalized = withoutDots.replace(',', '.')
     const val = parseFloat(normalized)
     return isNaN(val) ? 0 : val
   }
-  // Sem virgula: pode ser inteiro ou ja em formato ponto
   const val = parseFloat(cleaned)
   return isNaN(val) ? 0 : val
 }
 
+function resolveRelativeUrl(baseUrl, href) {
+  try {
+    return new URL(href, baseUrl).href
+  } catch (_) {
+    return href
+  }
+}
+
+function extractStoreName($) {
+  const emitSelectors = ['#u20', '.txtTopo', '#emit', '#dest', '.emitente', '.razao-social', '[id*="emit"]']
+  for (const sel of emitSelectors) {
+    const el = $(sel).first()
+    if (el && el.length) {
+      const text = el.text().trim()
+      if (text && text.length > 3) {
+        return text
+      }
+    }
+  }
+  // Fallback: primeiro bloco em negrito antes do CNPJ
+  const text = $('body').text()
+  const storeMatch = text.match(/RAZÃO\s+SOCIAL\s*:?\s*([^\n\r]{3,100})/i)
+  if (storeMatch) {
+    return storeMatch[1].trim()
+  }
+  return ''
+}
+
 export default async function handler(req, res) {
-  // Apenas permite POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido. Use POST.' })
   }
@@ -49,16 +66,22 @@ export default async function handler(req, res) {
     })
   }
 
-  // Se apenas a chave foi fornecida, monta a URL de consulta da SEFAZ-RJ
-  const targetUrl = url || `https://www.fazenda.rj.gov.br/consultaNFCe/ConsultaNFCe.aspx?chNFe=${accessKey}`
+  // Se apenas a chave foi fornecida (44 dígitos), monta a URL da SEFAZ-RJ
+  let targetUrl = url
+  if (!targetUrl && accessKey) {
+    // Tenta a URL pública de QR Code da SEFAZ-RJ primeiro
+    targetUrl = `https://consultadfe.fazenda.rj.gov.br/consultaNFCe/QRCode?p=${accessKey}|2|1|1`
+  }
 
-  // Timeout de 12 segundos
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 12000)
 
+  let firstResponse = null
+  let html = ''
+
   try {
-    // Faz o fetch no servidor para evitar bloqueios de CORS do navegador
-    const response = await fetch(targetUrl, {
+    // PRIMEIRO fetch: pode retornar iframe com o conteúdo real
+    firstResponse = await fetch(targetUrl, {
       signal: controller.signal,
       headers: {
         'User-Agent':
@@ -72,16 +95,55 @@ export default async function handler(req, res) {
 
     clearTimeout(timeoutId)
 
-    if (!response.ok) {
+    if (!firstResponse.ok) {
       return res.status(502).json({
-        error: `Não foi possível acessar a NFC-e (HTTP ${response.status}). Verifique a URL ou a chave de acesso.`,
+        error: `Não foi possível acessar a NFC-e (HTTP ${firstResponse.status}). Verifique a URL ou a chave de acesso.`,
       })
     }
 
-    const html = await response.text()
+    html = await firstResponse.text()
     const $ = load(html)
 
-    // Extrai chave de acesso (44 dígitos) — pode vir da URL ou do HTML
+    // --- DETECÇÃO DE IFRAME (SEFAZ-RJ costuma envolver o conteúdo em iframe) ---
+    const iframeSrc = $('iframe').first().attr('src')
+    if (iframeSrc) {
+      const iframeUrl = resolveRelativeUrl(targetUrl, iframeSrc)
+
+      // Segundo fetch para o iframe, repassando cookies da primeira resposta
+      const cookies = firstResponse.headers.get('set-cookie') || ''
+      const controller2 = new AbortController()
+      const timeoutId2 = setTimeout(() => controller2.abort(), 12000)
+
+      try {
+        const secondResponse = await fetch(iframeUrl, {
+          signal: controller2.signal,
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            Accept: 'text/html,application/xhtml+xml',
+            'Accept-Language': 'pt-BR,pt;q=0.9',
+            'Connection': 'keep-alive',
+            ...(cookies ? { Cookie: cookies } : {}),
+            Referer: targetUrl,
+          },
+          redirect: 'follow',
+        })
+
+        clearTimeout(timeoutId2)
+
+        if (secondResponse.ok) {
+          html = await secondResponse.text()
+        }
+      } catch (_) {
+        // Mantém o HTML do primeiro fetch se o iframe falhar
+      }
+    }
+
+    const $$ = load(html)
+
+    // --- Extração de dados ---
+
+    // Chave de acesso (44 dígitos)
     let extractedAccessKey = accessKey
     if (!extractedAccessKey) {
       const keyMatch = html.match(/[0-9]{44}/)
@@ -90,32 +152,10 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- Extração de dados da SEFAZ-RJ ---
+    // Estabelecimento / emitente
+    const storeName = extractStoreName($$)
 
-    // Razão social do emitente — seletores oficiais da SEFAZ-RJ
-    let storeName = ''
-    const emitSelectors = ['#u20', '.txtTopo', '#emit', '#dest', '.emitente', '.razao-social', '[id*="emit"]']
-    for (const sel of emitSelectors) {
-      const el = $(sel).first()
-      if (el && el.length) {
-        const text = el.text().trim()
-        if (text && text.length > 3) {
-          storeName = text
-          break
-        }
-      }
-    }
-
-    // Fallback: procura por padrão de razão social no texto
-    if (!storeName) {
-      const text = $('body').text()
-      const storeMatch = text.match(/RAZÃO\s+SOCIAL\s*:?\s*([^\n\r]{3,100})/i)
-      if (storeMatch) {
-        storeName = storeMatch[1].trim()
-      }
-    }
-
-    // Extrai data de emissão — padrão brasileiro DD/MM/AAAA
+    // Data de emissão
     let issueDate = null
     const dateMatch = html.match(/(\d{2}\/\d{2}\/\d{4})/)
     if (dateMatch) {
@@ -123,11 +163,11 @@ export default async function handler(req, res) {
       issueDate = `${y}-${m}-${d}`
     }
 
-    // Extrai valor total da nota — seletor #linhaTotal .totalNumb ou regex
+    // Valor total da nota
     let totalAmount = 0
-    const totalSelector = $('#linhaTotal .totalNumb, .valorTotal, #totalNFe')
+    const totalSelector = $$('#linhaTotal .totalNumb, .totalNumb, .valorTotal, #totalNFe').first()
     if (totalSelector.length) {
-      totalAmount = normalizeBRLNumber(totalSelector.first().text())
+      totalAmount = normalizeBRLNumber(totalSelector.text())
     } else {
       const totalMatch = html.match(/VALOR\s+TOTAL\s*:?\s*R?\$?\s*([\d.,]+)/i)
       if (totalMatch) {
@@ -135,13 +175,13 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- Extração de itens da nota ---
+    // --- Extração de itens ---
     const items = []
 
     // Estrutura oficial da SEFAZ-RJ: #tabResult tr com classes .txtTit, .Rqtd, .RUN, .RvlUnit, .valor
-    $('#tabResult tr').each((_, el) => {
-      const $row = $(el)
-      const descEl = $row.find('.txtTit').first()
+    $$('#tabResult tr').each((_, el) => {
+      const $row = $$(el)
+      const descEl = $row.find('.txtTit, .txtTit2').first()
       const qtyEl = $row.find('.Rqtd').first()
       const unitEl = $row.find('.RUN').first()
       const priceEl = $row.find('.RvlUnit').first()
@@ -162,10 +202,10 @@ export default async function handler(req, res) {
       }
     })
 
-    // Fallback: parsing genérico de tabela se nao encontrou via seletores oficiais
+    // Fallback: parsing genérico de tabela
     if (items.length === 0) {
-      $('tr, .item, .produto').each((_, el) => {
-        const rowText = $(el).text().trim()
+      $$('tr, .item, .produto').each((_, el) => {
+        const rowText = $$(el).text().trim()
         if (
           !rowText ||
           rowText.includes('PRODUTO') ||
@@ -178,12 +218,12 @@ export default async function handler(req, res) {
           return
         }
 
-        const cells = $(el).find('td, th')
+        const cells = $$(el).find('td, th')
         if (cells.length >= 3) {
-          const desc = $(cells.eq(0)).text().trim() || rowText.split(/\s{2,}/)[0] || ''
-          const qtyText = $(cells.eq(1)).text().trim()
-          const priceText = $(cells.eq(2)).text().trim()
-          const totalText = $(cells.eq(3)).text().trim() || priceText
+          const desc = $$(cells.eq(0)).text().trim() || rowText.split(/\s{2,}/)[0] || ''
+          const qtyText = $$(cells.eq(1)).text().trim()
+          const priceText = $$(cells.eq(2)).text().trim()
+          const totalText = $$(cells.eq(3)).text().trim() || priceText
 
           const quantity = normalizeBRLNumber(qtyText)
           const unitPrice = normalizeBRLNumber(priceText)
@@ -201,7 +241,7 @@ export default async function handler(req, res) {
       })
     }
 
-    // Remove itens duplicados (mesma descricao)
+    // Remove duplicados
     const uniqueItems = items.filter(
       (item, index) =>
         index ===
@@ -209,6 +249,23 @@ export default async function handler(req, res) {
           (i) => i.raw_description.toLowerCase() === item.raw_description.toLowerCase()
         )
     )
+
+    // Se não encontrou itens, retorna erro claro com debugHint
+    if (uniqueItems.length === 0) {
+      const bodyText = $$('body').text().trim()
+      const debugHint = bodyText.substring(0, 300)
+      return res.status(200).json({
+        success: false,
+        error: 'Nenhum item encontrado na NFC-e. O layout da SEFAZ-RJ pode ter mudado ou a nota pode estar vazia.',
+        accessKey: extractedAccessKey || '',
+        storeName: storeName || 'Estabelecimento não identificado',
+        issueDate,
+        totalAmount,
+        items: [],
+        rawUrl: targetUrl,
+        debugHint,
+      })
+    }
 
     return res.status(200).json({
       success: true,
