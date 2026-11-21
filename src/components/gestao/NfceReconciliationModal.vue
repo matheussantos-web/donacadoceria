@@ -247,16 +247,23 @@ async function confirmReconciliation() {
     // 1. Verificar duplicata de access_key (usando maybeSingle para evitar erro 406 quando não existe)
     const { data: existingInvoice, error: checkError } = await supabase
       .from('invoices')
-      .select('id, access_key')
+      .select('id, access_key, invoice_items(id)')
       .eq('access_key', props.nfce.accessKey)
       .maybeSingle()
 
     if (checkError) throw checkError
 
+    // Verificação inteligente: se a nota existe mas não tem itens (registro órfão de tentativa anterior), remove e prossegue
     if (existingInvoice) {
-      duplicateWarning.value = existingInvoice
-      saving.value = false
-      return
+      const itemsCount = existingInvoice.invoice_items?.length || 0
+      if (itemsCount === 0) {
+        // Remove registro órfão para permitir nova importação
+        await supabase.from('invoices').delete().eq('id', existingInvoice.id)
+      } else {
+        duplicateWarning.value = existingInvoice
+        saving.value = false
+        return
+      }
     }
 
     // 2. Inserir nota fiscal e garantir que o id seja retornado
@@ -339,6 +346,15 @@ async function confirmReconciliation() {
     emit('confirmed', createdInvoice)
     closeModal()
   } catch (err) {
+    // Rollback: se a nota já foi inserida no banco mas algo falhou depois, remove o cabeçalho órfão
+    try {
+      if (createdInvoice && createdInvoice.id) {
+        await supabase.from('invoices').delete().eq('id', createdInvoice.id)
+      }
+    } catch (rollbackErr) {
+      console.error('[NfceReconciliation] Erro no rollback:', rollbackErr.message)
+    }
+
     console.error('[NfceReconciliation] Erro:', err)
     alert(err.message || 'Erro ao processar conciliação.')
   } finally {
