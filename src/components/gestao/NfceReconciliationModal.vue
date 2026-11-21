@@ -1,4 +1,3 @@
-
 <template>
   <div
     v-if="visible"
@@ -26,6 +25,44 @@
         >
           <span class="text-2xl">✕</span>
         </button>
+      </div>
+
+      <!-- Contador resumido -->
+      <div class="bg-brand-bg border border-gray-100 rounded-lg p-3 mb-4 flex items-center justify-between text-sm">
+        <span class="text-brand-text-muted flex items-center gap-2">
+          <span class="text-brand-primary font-medium">{{ linkedCount }}</span> vinculados ·
+          <span class="text-brand-primary font-medium">{{ newCount }}</span> novos insumos ·
+          <span class="text-brand-text-muted font-medium">{{ ignoredCount }}</span> ignorados
+        </span>
+      </div>
+
+      <!-- Barra de Ações em Lote -->
+      <div class="bg-brand-bg border border-gray-100 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="text-xs text-brand-text-muted font-medium uppercase tracking-wider">
+          Ações em lote
+        </div>
+        <div class="flex gap-2">
+          <button
+            @click="batchLinkAllNew"
+            :disabled="noUnlinkedItems"
+            class="flex-1 btn-primary py-2 text-sm font-medium"
+          >
+            Cadastrar todos sem vínculo como novos
+          </button>
+          <button
+            @click="batchIgnoreAllUnlinked"
+            :disabled="noUnlinkedItems"
+            class="flex-1 py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded border border-gray-200"
+          >
+            Ignorar todos sem vínculo
+          </button>
+          <button
+            @click="resetSuggestions"
+            class="px-3 py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded border border-gray-200"
+          >
+            Resetar sugestões
+          </button>
+        </div>
       </div>
 
       <!-- Aviso de duplicata -->
@@ -121,12 +158,19 @@
                     class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
                   >
                     <option value="" class="text-brand-text-muted">Selecionar insumo existente...</option>
-                    <option v-for="(ing, i) in availableIngredients" :key="i" :value="ing.id">
+                    <option
+                      v-for="(ing, i) in availableIngredients"
+                      :key="i"
+                      :value="ing.id"
+                    >
                       {{ ing.name }} ({{ ing.category }}) · R$ {{ formatPrice(ing.costPerBaseUnit) }}/{{ ing.baseUnit }}
                     </option>
                     <option value="__NEW__" class="text-brand-primary">+ Cadastrar como novo insumo</option>
                   </select>
-                  <div v-if="item.selectedIngredientId && !item.newIngredientMode && availableIngredients.find(i => i.id === item.selectedIngredientId)" class="text-xs text-brand-text-muted mt-1">
+                  <div
+                    v-if="item.selectedIngredientId && !item.newIngredientMode && availableIngredients.find(i => i.id === item.selectedIngredientId)"
+                    class="text-xs text-brand-text-muted mt-1"
+                  >
                     Custo atual: R$ {{ formatPrice(availableIngredients.find(i => i.id === item.selectedIngredientId).costPerBaseUnit) }}/{{ availableIngredients.find(i => i.id === item.selectedIngredientId).baseUnit }}
                   </div>
                 </div>
@@ -184,7 +228,9 @@ const saving = ref(false)
 const formatPrice = (price) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price || 0)
 
-const formatNumber = (num) => Number(num || 0).toLocaleString('pt-BR')
+const formatNumber = (num) => Number(num || 0).toLocaleString('pt-Br')
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** Similaridade simples por palavras-chave para sugerir insumo */
 function suggestIngredient(desc) {
@@ -208,6 +254,49 @@ function suggestIngredient(desc) {
   return bestScore > 0 ? bestMatch : null
 }
 
+/** Inferência inteligente de embalagem a partir da descrição */
+function inferPackageInfo(description) {
+  if (!description) return { packageSize: 1, baseUnit: 'un', purchaseUnit: 'un', name: '' }
+
+  const desc = description.toUpperCase()
+
+  const patterns = [
+    [/([\d.,]+)\s*KG/i, 'g', (v) => Math.round(v * 1000)],
+    [/([\d.,]+)\s*K/i, 'g', (v) => Math.round(v * 1000)],
+    [/([\d.,]+)\s*G/i, 'g', (v) => v],
+    [/([\d.,]+)\s*ML/i, 'ml', (v) => v],
+    [/([\d.,]+)\s*L/i, 'ml', (v) => Math.round(v * 1000)],
+    [/([\d.,]+)\s*UN/i, 'un', (v) => v],
+    [/([\d.,]+)\s*U/i, 'un', (v) => v],
+  ]
+
+  for (const [regex, baseUnit, converter] of patterns) {
+    const match = desc.match(regex)
+    if (match) {
+      const rawValue = match[1].replace(',', '.')
+      const value = parseFloat(rawValue)
+      if (!isNaN(value)) {
+        return {
+          packageSize: converter(value),
+          baseUnit,
+          purchaseUnit: baseUnit === 'g' || baseUnit === 'ml' ? 'cx' : 'un',
+          name: description.replace(regex, '').trim(),
+        }
+      }
+    }
+  }
+
+  const isolatedNumber = desc.match(/(\d{2,4})/)
+  if (isolatedNumber) {
+    const value = parseInt(isolatedNumber[1], 10)
+    if (value >= 10 && value <= 5000) {
+      return { packageSize: value, baseUnit: 'g', purchaseUnit: 'cx', name: description }
+    }
+  }
+
+  return { packageSize: 1, baseUnit: 'un', purchaseUnit: 'un', name: description }
+}
+
 onMounted(() => {
   loadIngredients()
   initializeItems()
@@ -224,14 +313,31 @@ async function loadIngredients() {
 function initializeItems() {
   nfceItems.value = (props.nfce.items || []).map((item) => {
     const suggested = suggestIngredient(item.raw_description)
+    const pkg = inferPackageInfo(item.raw_description)
+
+    if (suggested) {
+      // Match automático com insumo existente
+      return {
+        ...item,
+        selectedIngredientId: suggested.id,
+        newIngredientMode: false,
+        newIngredientName: '',
+        newCategory: suggested.category,
+        newPackageSize: suggested.packageSize,
+        newBaseUnit: suggested.baseUnit,
+        ignoreItem: false,
+      }
+    }
+
+    // Sem match: pré-selecionar "Cadastrar como novo insumo"
     return {
       ...item,
-      selectedIngredientId: suggested ? suggested.id : null,
-      newIngredientMode: false,
-      newIngredientName: '',
+      selectedIngredientId: '__NEW__',
+      newIngredientMode: true,
+      newIngredientName: pkg.name || item.raw_description,
       newCategory: 'Outros',
-      newPackageSize: 1,
-      newBaseUnit: 'g',
+      newPackageSize: pkg.packageSize,
+      newBaseUnit: pkg.baseUnit,
       ignoreItem: false,
     }
   })
@@ -241,9 +347,50 @@ const confirmableItems = computed(() =>
   nfceItems.value.filter((i) => !i.ignoreItem && (i.selectedIngredientId || i.newIngredientMode))
 )
 
+const linkedCount = computed(() =>
+  nfceItems.value.filter((i) => !i.ignoreItem && i.selectedIngredientId && i.selectedIngredientId !== '__NEW__').length
+)
+
+const newCount = computed(() =>
+  nfceItems.value.filter((i) => !i.ignoreItem && (i.selectedIngredientId === '__NEW__' || i.newIngredientMode)).length
+)
+
+const ignoredCount = computed(() => nfceItems.value.filter((i) => i.ignoreItem).length)
+
+const noUnlinkedItems = computed(() =>
+  nfceItems.value.some((i) => !i.ignoreItem && (!i.selectedIngredientId || i.selectedIngredientId === '__NEW__'))
+)
+
+async function batchLinkAllNew() {
+  for (const item of nfceItems.value) {
+    if (!item.ignoreItem && (!item.selectedIngredientId || item.selectedIngredientId === '__NEW__')) {
+      item.selectedIngredientId = '__NEW__'
+      item.newIngredientMode = true
+      const pkg = inferPackageInfo(item.raw_description)
+      item.newIngredientName = pkg.name || item.raw_description
+      item.newPackageSize = pkg.packageSize
+      item.newBaseUnit = pkg.baseUnit
+      item.newCategory = 'Outros'
+    }
+  }
+}
+
+async function batchIgnoreAllUnlinked() {
+  for (const item of nfceItems.value) {
+    if (!item.selectedIngredientId || item.selectedIngredientId === '__NEW__') {
+      item.ignoreItem = true
+      item.newIngredientMode = false
+    }
+  }
+}
+
+function resetSuggestions() {
+  initializeItems()
+}
+
 async function confirmReconciliation() {
   saving.value = true
-  let createdInvoiceId = null  // declarada fora do try para o catch ter acesso
+  let createdInvoiceId = null // declarada fora do try para o catch ter acesso
 
   try {
     // 1. Verificar duplicata de access_key (usando maybeSingle para evitar erro 406 quando não existe)
@@ -317,14 +464,18 @@ async function confirmReconciliation() {
       }
 
       // Validação obrigatória: ingredient_id nunca pode ser "__NEW__", vazio ou não-UUID
-      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(ingredientId))
+      const isValidUuid = UUID_REGEX.test(String(ingredientId))
       if (!isValidUuid) {
-        throw new Error(`Insumo inválido para "${item.raw_description}": selecione um insumo existente ou cadastre um novo.`)
+        throw new Error(
+          `Insumo inválido para "${item.raw_description}": selecione um insumo existente ou cadastre um novo.`
+        )
       }
 
       // Guard final: garantir que __NEW__ não chegue ao banco
       if (ingredientId === '__NEW__' || !ingredientId) {
-        throw new Error(`ingredient_id inválido para "${item.raw_description}". Verifique se o insumo foi vinculado corretamente.`)
+        throw new Error(
+          `ingredient_id inválido para "${item.raw_description}". Verifique se o insumo foi vinculado corretamente.`
+        )
       }
 
       const finalIngredientId = ingredientId
