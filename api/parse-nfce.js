@@ -69,7 +69,7 @@ export default async function handler(req, res) {
   // Se apenas a chave foi fornecida (44 dígitos), monta a URL da SEFAZ-RJ
   let targetUrl = url
   if (!targetUrl && accessKey) {
-    // Tenta a URL pública de QR Code da SEFAZ-RJ primeiro
+    // Tenta a URL pública de QR Code da SEFAZ-RJ primeiro (SP)
     targetUrl = `https://consultadfe.fazenda.rj.gov.br/consultaNFCe/QRCode?p=${accessKey}|2|1|1`
   }
 
@@ -78,6 +78,7 @@ export default async function handler(req, res) {
 
   let firstResponse = null
   let html = ''
+  let lastError = null
 
   try {
     // PRIMEIRO fetch: pode retornar iframe com o conteúdo real
@@ -85,10 +86,11 @@ export default async function handler(req, res) {
       signal: controller.signal,
       headers: {
         'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml',
+          'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'pt-BR,pt;q=0.9',
         'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
       },
       redirect: 'follow',
     })
@@ -96,12 +98,47 @@ export default async function handler(req, res) {
     clearTimeout(timeoutId)
 
     if (!firstResponse.ok) {
-      return res.status(502).json({
-        error: `Não foi possível acessar a NFC-e (HTTP ${firstResponse.status}). Verifique a URL ou a chave de acesso.`,
-      })
+      lastError = new Error(`HTTP ${firstResponse.status}`)
+    } else {
+      html = await firstResponse.text()
     }
 
-    html = await firstResponse.text()
+    // Se a primeira URL falhou (timeout ou erro de região), tenta o fallback www4
+    if (!html && accessKey && lastError) {
+      const fallbackUrl = `http://www4.fazenda.rj.gov.br/consultaNFCe/QRCode?p=${accessKey}|2|1|1`
+      const controllerFallback = new AbortController()
+      const timeoutIdFallback = setTimeout(() => controllerFallback.abort(), 12000)
+
+      try {
+        const fbResponse = await fetch(fallbackUrl, {
+          signal: controllerFallback.signal,
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'pt-BR,pt;q=0.9',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+          },
+          redirect: 'follow',
+        })
+
+        clearTimeout(timeoutIdFallback)
+
+        if (fbResponse.ok) {
+          html = await fbResponse.text()
+          targetUrl = fallbackUrl
+          lastError = null
+        }
+      } catch (_) {
+        // ignora erro do fallback
+      }
+    }
+
+    if (!html) {
+      throw lastError || new Error('Não foi obter conteúdo da NFC-e')
+    }
+
     const $ = load(html)
 
     // --- DETECÇÃO DE IFRAME (SEFAZ-RJ costuma envolver o conteúdo em iframe) ---

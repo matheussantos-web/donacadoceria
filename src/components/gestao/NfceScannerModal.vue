@@ -15,7 +15,7 @@
       </div>
 
       <!-- Câmera / QR Code -->
-      <div class="bg-brand-bg border border-gray-200 rounded-lg p-4 aspect-video mb-4 relative overflow-hidden">
+      <div class="bg-brand-bg border border-gray-200 rounded-lg p-4 relative overflow-hidden min-h-[320px] sm:min-h-[360px] w-full">
         <div id="qr-reader" class="w-full h-full"></div>
         <div
           v-if="!isScannerReady"
@@ -146,6 +146,9 @@ async function initScanner() {
     qrReader.value = new Html5Qrcode('qr-reader', {
       formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
       verbose: false,
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true,
+      },
     })
     isScannerReady.value = true
   } catch (err) {
@@ -169,6 +172,7 @@ async function startScanner() {
       { facingMode: 'environment' },
       {
         fps: 15,
+        aspectRatio: 1.0,
         qrbox: (viewfinderWidth, viewfinderHeight) => {
           const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.72)
           return { width: size, height: size }
