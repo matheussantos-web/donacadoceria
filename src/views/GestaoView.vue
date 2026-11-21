@@ -64,7 +64,13 @@
       <div v-if="activeModule === 'nfce'" class="space-y-6">
         <h2 class="font-display font-medium text-2xl text-brand-text-primary">Importar Nota Fiscal</h2>
         <p class="text-brand-text-muted">Leia a chave de acesso da NFC-e para atualizar estoque e custos automaticamente.</p>
-        <NfceScannerModal v-if="showScanner" :visible="showScanner" @nfce-scanned="handleNfceScanned" @close="showScanner = false" />
+        <NfceScannerModal
+          v-if="showScanner"
+          :visible="showScanner"
+          @nfce-scanned="handleNfceScanned"
+          @manual-entry="handleManualEntry"
+          @close="showScanner = false"
+        />
         <button
           @click="showScanner = true"
           class="btn-primary px-4 py-2 text-sm font-medium flex items-center gap-2"
@@ -158,6 +164,11 @@ async function handleNfceScanned(nfce) {
   pendingNfce.value = nfce
   showScanner.value = false
   showReconciliation.value = true
+}
+
+function handleManualEntry() {
+  showScanner.value = false
+  activeModule.value = "estoque"
 }
 
 async function onReconciliationConfirmed(invoice) {
