@@ -41,6 +41,12 @@
         >
           Colar URL ou chave da nota
         </button>
+        <button
+          @click="showPasteText = true"
+          class="px-3 py-2 text-sm font-medium text-brand-primary underline hover:text-brand-accent"
+        >
+          Colar texto da nota
+        </button>
       </div>
 
       <!-- Entrada manual -->
@@ -64,6 +70,36 @@
           </button>
           <button
             @click="showManualInput = false"
+            class="px-3 py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+
+      <!-- Colar texto da nota fiscal (SEFAZ-RJ aberta no navegador do celular) -->
+      <div v-if="showPasteText" class="mt-4 pb-4 border-t border-gray-100">
+        <label class="block text-sm font-medium text-brand-text-muted mb-2">
+          Cole o texto da nota fiscal
+        </label>
+        <p class="text-xs text-brand-text-muted mb-2">
+          Abra a nota no navegador do celular, selecione tudo, copie e cole aqui:
+        </p>
+        <textarea
+          v-model="pasteText"
+          rows="4"
+          placeholder="Cole aqui o texto completo da nota fiscal..."
+          class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+        ></textarea>
+        <div class="mt-2 flex gap-2">
+          <button
+            @click="processPasteText"
+            class="flex-1 btn-primary py-2 text-sm font-medium"
+          >
+            Processar texto
+          </button>
+          <button
+            @click="showPasteText = false"
             class="px-3 py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded"
           >
             Cancelar
@@ -123,6 +159,8 @@ const isScannerReady = ref(false)
 const isCameraOn = ref(false)
 const scanning = ref(false)
 const manualInput = ref('')
+const showPasteText = ref(false)
+const pasteText = ref('')
 const scanError = ref(null)
 const parsedNfce = ref(null)
 
@@ -221,7 +259,14 @@ async function processManualInput() {
   manualInput.value = ''
 }
 
-async function processNfceInput(input) {
+async function processPasteText() {
+  if (!pasteText.value.trim()) return
+  processNfceInput(pasteText.value.trim(), pasteText.value)
+  pasteText.value = ''
+  showPasteText.value = false
+}
+
+async function processNfceInput(input, rawText = null) {
   scanning.value = false
   scanError.value = null
   parsedNfce.value = null
@@ -230,7 +275,7 @@ async function processNfceInput(input) {
     const response = await fetch('/api/parse-nfce', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: input }),
+      body: JSON.stringify({ url: input, rawText }),
     })
 
     if (!response.ok) {

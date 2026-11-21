@@ -7,6 +7,9 @@
  * faz o fetch no servidor (evitando CORS), segue redirecionamentos/iframes
  * da SEFAZ-RJ, extrai dados do estabelecimento, data, chave de acesso e itens,
  * retornando um JSON limpo para o painel de gestão.
+ *
+ * Contingência: se o fetch direto falhar (bloqueio/timeout da SEFAZ-RJ em
+ * servidores gratuitos nos EUA), tenta via proxy allorigins.win.
  */
 
 import { load } from 'cheerio'
@@ -44,7 +47,6 @@ function extractStoreName($) {
       }
     }
   }
-  // Fallback: primeiro bloco em negrito antes do CNPJ
   const text = $('body').text()
   const storeMatch = text.match(/RAZÃO\s+SOCIAL\s*:?\s*([^\n\r]{3,100})/i)
   if (storeMatch) {
@@ -53,35 +55,204 @@ function extractStoreName($) {
   return ''
 }
 
+/** Fetch com timeout via proxy allorigins.win (contingência para firewall da SEFAZ-RJ) */
+async function fetchViaAllOrigins(targetUrl) {
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 12000)
+
+  try {
+    const response = await fetch(proxyUrl, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+        'Connection': 'keep-alive',
+      },
+      redirect: 'follow',
+    })
+    clearTimeout(timeoutId)
+    if (response.ok) {
+      return await response.text()
+    }
+    return null
+  } catch (_) {
+    clearTimeout(timeoutId)
+    return null
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido. Use POST.' })
   }
 
-  const { url, accessKey } = req.body || {}
+  const { url, accessKey, rawText } = req.body || {}
 
-  if (!url && !accessKey) {
+  if (!url && !accessKey && !rawText) {
     return res.status(400).json({
-      error: 'Informe a URL do QR Code da NFC-e ou a chave de acesso (44 dígitos).',
+      error: 'Informe a URL do QR Code da NFC-e, a chave de acesso (44 dígitos) ou cole o texto da nota fiscal.',
     })
+  }
+
+  // Se o usuário colou texto bruto da nota fiscal, tenta extrair diretamente
+  if (rawText && !url && !accessKey) {
+    const $ = load(rawText)
+    const html = rawText
+    // Pula direto para extração (abaixo)
+    gotoExtraction:
+    {
+      // Chave de acesso (44 dígitos) no texto colado
+      let extractedAccessKey = ''
+      const keyMatch = html.match(/[0-9]{44}/)
+      if (keyMatch) {
+        extractedAccessKey = keyMatch[0]
+      }
+
+      // Estabelecimento / emitente
+      const storeName = extractStoreName($)
+
+      // Data de emissão
+      let issueDate = null
+      const dateMatch = html.match(/(\d{2}\/\d{2}\/\d{4})/)
+      if (dateMatch) {
+        const [d, m, y] = dateMatch[1].split('/')
+        issueDate = `${y}-${m}-${d}`
+      }
+
+      // Valor total da nota
+      let totalAmount = 0
+      const totalSelector = $('#linhaTotal .totalNumb, .totalNumb, .valorTotal, #totalNFe').first()
+      if (totalSelector.length) {
+        totalAmount = normalizeBRLNumber(totalSelector.text())
+      } else {
+        const totalMatch = html.match(/VALOR\s+TOTAL\s*:?\s*R?\$?\s*([\d.,]+)/i)
+        if (totalMatch) {
+          totalAmount = normalizeBRLNumber(totalMatch[1])
+        }
+      }
+
+      // --- Extração de itens ---
+      const items = []
+
+      $('#tabResult tr').each((_, el) => {
+        const $row = $(el)
+        const descEl = $row.find('.txtTit, .txtTit2').first()
+        const qtyEl = $row.find('.Rqtd').first()
+        const unitEl = $row.find('.RUN').first()
+        const priceEl = $row.find('.RvlUnit').first()
+        const totalEl = $row.find('.valor').first()
+
+        const desc = descEl.text().trim()
+        const quantity = normalizeBRLNumber(qtyEl.text())
+        const unitPrice = normalizeBRLNumber(priceEl.text())
+        const totalPrice = normalizeBRLNumber(totalEl.text())
+
+        if (desc && desc.length > 2 && (quantity > 0 || unitPrice > 0 || totalPrice > 0)) {
+          items.push({
+            raw_description: desc,
+            quantity,
+            unit_price: unitPrice,
+            total_price: totalPrice,
+          })
+        }
+      })
+
+      // Fallback: parsing genérico de tabela
+      if (items.length === 0) {
+        $('tr, .item, .produto').each((_, el) => {
+          const rowText = $(el).text().trim()
+          if (
+            !rowText ||
+            rowText.includes('PRODUTO') ||
+            rowText.includes('DESCRIÇÃO') ||
+            rowText.includes('TOTAL') ||
+            rowText.includes('CNPJ') ||
+            rowText.includes('CHAVE') ||
+            rowText.length < 5
+          ) {
+            return
+          }
+
+          const cells = $(el).find('td, th')
+          if (cells.length >= 3) {
+            const desc = $(cells.eq(0)).text().trim() || rowText.split(/\s{2,}/)[0] || ''
+            const qtyText = $(cells.eq(1)).text().trim()
+            const priceText = $(cells.eq(2)).text().trim()
+            const totalText = $(cells.eq(3)).text().trim() || priceText
+
+            const quantity = normalizeBRLNumber(qtyText)
+            const unitPrice = normalizeBRLNumber(priceText)
+            const totalPrice = normalizeBRLNumber(totalText)
+
+            if (desc && desc.length > 2 && (quantity > 0 || unitPrice > 0 || totalPrice > 0)) {
+              items.push({
+                raw_description: desc,
+                quantity,
+                unit_price: unitPrice,
+                total_price: totalPrice,
+              })
+            }
+          }
+        })
+      }
+
+      // Remove duplicados
+      const uniqueItems = items.filter(
+        (item, index) =>
+          index ===
+          items.findIndex(
+            (i) => i.raw_description.toLowerCase() === item.raw_description.toLowerCase()
+          )
+      )
+
+      if (uniqueItems.length === 0) {
+        const bodyText = $('body').text().trim()
+        const debugHint = bodyText.substring(0, 300)
+        return res.status(200).json({
+          success: false,
+          error: 'Nenhum item encontrado no texto colado. Verifique se copiou o conteúdo completo da nota fiscal.',
+          accessKey: extractedAccessKey || '',
+          storeName: storeName || 'Estabelecimento não identificado',
+          issueDate,
+          totalAmount,
+          items: [],
+          rawUrl: 'texto-colado',
+          debugHint,
+        })
+      }
+
+      return res.status(200).json({
+        success: true,
+        accessKey: extractedAccessKey || '',
+        storeName: storeName || 'Estabelecimento não identificado',
+        issueDate,
+        totalAmount,
+        items: uniqueItems,
+        rawUrl: 'texto-colado',
+        message: 'Nota fiscal processada com sucesso.',
+      })
+    }
+    return
   }
 
   // Se apenas a chave foi fornecida (44 dígitos), monta a URL da SEFAZ-RJ
   let targetUrl = url
   if (!targetUrl && accessKey) {
-    // Tenta a URL pública de QR Code da SEFAZ-RJ primeiro (SP)
     targetUrl = `https://consultadfe.fazenda.rj.gov.br/consultaNFCe/QRCode?p=${accessKey}|2|1|1`
   }
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 12000)
+  const timeoutId = setTimeout(() => controller.abort(), 7000)
 
   let firstResponse = null
   let html = ''
   let lastError = null
 
   try {
-    // PRIMEIRO fetch: pode retornar iframe com o conteúdo real
+    // PRIMEIRO fetch: direto na SEFAZ-RJ (timeout 7s)
     firstResponse = await fetch(targetUrl, {
       signal: controller.signal,
       headers: {
@@ -103,11 +274,11 @@ export default async function handler(req, res) {
       html = await firstResponse.text()
     }
 
-    // Se a primeira URL falhou (timeout ou erro de região), tenta o fallback www4
+    // SECOND fallback: www4.fazenda.rj.gov.br
     if (!html && accessKey && lastError) {
       const fallbackUrl = `http://www4.fazenda.rj.gov.br/consultaNFCe/QRCode?p=${accessKey}|2|1|1`
       const controllerFallback = new AbortController()
-      const timeoutIdFallback = setTimeout(() => controllerFallback.abort(), 12000)
+      const timeoutIdFallback = setTimeout(() => controllerFallback.abort(), 7000)
 
       try {
         const fbResponse = await fetch(fallbackUrl, {
@@ -131,7 +302,16 @@ export default async function handler(req, res) {
           lastError = null
         }
       } catch (_) {
-        // ignora erro do fallback
+        // ignora erro do fallback www4
+      }
+    }
+
+    // THIRD fallback: proxy allorigins.win (infalível contra bloqueio regional)
+    if (!html && accessKey && lastError) {
+      const proxyHtml = await fetchViaAllOrigins(targetUrl)
+      if (proxyHtml) {
+        html = proxyHtml
+        lastError = null
       }
     }
 
@@ -147,9 +327,9 @@ export default async function handler(req, res) {
       const iframeUrl = resolveRelativeUrl(targetUrl, iframeSrc)
 
       // Segundo fetch para o iframe, repassando cookies da primeira resposta
-      const cookies = firstResponse.headers.get('set-cookie') || ''
+      const cookies = firstResponse?.headers?.get('set-cookie') || ''
       const controller2 = new AbortController()
-      const timeoutId2 = setTimeout(() => controller2.abort(), 12000)
+      const timeoutId2 = setTimeout(() => controller2.abort(), 7000)
 
       try {
         const secondResponse = await fetch(iframeUrl, {
