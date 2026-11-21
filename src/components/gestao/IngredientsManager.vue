@@ -228,11 +228,14 @@
             </select>
           </div>
 
-          <!-- Unidade de compra -->
+          <!-- Como você compra este item? -->
           <div>
             <label class="block text-sm font-medium text-brand-text-muted mb-1">
-              Unidade de compra da embalagem
+              Como você compra este item?
             </label>
+            <p class="text-xs text-brand-text-muted mb-2">
+              Ex: Caixa, Pacote, Lata, Frasco, Unidade, Kg, Litro
+            </p>
             <select
               v-model="form.purchaseUnit"
               class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
@@ -244,10 +247,10 @@
             </select>
           </div>
 
-          <!-- Tamanho da embalagem -->
+          <!-- Quanto vem dentro de 1 embalagem? -->
           <div>
             <label class="block text-sm font-medium text-brand-text-muted mb-1">
-              Tamanho da embalagem (ex: 395 para 395g)
+              Quanto vem dentro de 1 embalagem?
             </label>
             <input
               v-model.number="form.packageSize"
@@ -255,14 +258,18 @@
               step="0.01"
               min="0.01"
               required
+              :placeholder="packageSizePlaceholder"
               class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
             />
+            <p class="text-xs text-brand-text-muted mt-1">
+              Ex: {{ packageSizePlaceholder }} {{ form.baseUnit }}
+            </p>
           </div>
 
-          <!-- Unidade base -->
+          <!-- Unidade usada nas receitas -->
           <div>
             <label class="block text-sm font-medium text-brand-text-muted mb-1">
-              Unidade base (para cálculo de custo)
+              Unidade usada nas receitas
             </label>
             <select
               v-model="form.baseUnit"
@@ -274,10 +281,10 @@
             </select>
           </div>
 
-          <!-- Custo da embalagem -->
+          <!-- Quanto custa 1 embalagem? -->
           <div>
             <label class="block text-sm font-medium text-brand-text-muted mb-1">
-              Custo da embalagem (R$)
+              Quanto custa 1 embalagem? (R$)
             </label>
             <input
               v-model.number="form.lastUnitCost"
@@ -289,18 +296,38 @@
             />
           </div>
 
-          <!-- Estoque atual -->
-          <div>
-            <label class="block text-sm font-medium text-brand-text-muted mb-1">
-              Estoque atual ({{ form.baseUnit }})
-            </label>
-            <input
-              v-model.number="form.stockQuantity"
-              type="number"
-              step="0.01"
-              min="0"
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
-            />
+          <!-- Estoque atual (embalagens + total na unidade base) -->
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+            <p class="text-xs font-medium text-brand-text-muted mb-3 uppercase tracking-wider">
+              Estoque atual
+            </p>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-brand-text-muted mb-1">
+                  Embalagens fechadas
+                </label>
+                <input
+                  v-model.number="form.stockPackages"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-brand-text-muted mb-1">
+                  Total em {{ form.baseUnit }}
+                </label>
+                <input
+                  v-model.number="form.stockQuantity"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  readonly
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none opacity-70 cursor-not-allowed"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- Estoque mínimo -->
@@ -315,6 +342,35 @@
               min="0"
               class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
             />
+          </div>
+
+          <!-- Resumo de custo em tempo real -->
+          <div class="bg-brand-primary/5 border border-brand-primary/20 rounded-xl p-4 mb-2">
+            <p class="text-xs font-medium text-brand-text-muted mb-3 uppercase tracking-wider">
+              Resumo antes de salvar
+            </p>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-brand-text-muted">Custo por embalagem:</span>
+                <span class="font-medium text-brand-text-primary">
+                  R$ {{ costPerPackage }} ({{ purchaseUnitLabel }} com {{ formatNumber(form.packageSize) }}{{ form.baseUnit }})
+                </span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-brand-text-muted">Custo para receitas:</span>
+                <span class="font-medium text-brand-text-primary">
+                  R$ {{ costPerBaseUnit }} por {{ form.baseUnit }}
+                </span>
+              </div>
+              <div class="flex justify-between border-t border-gray-200 pt-2">
+                <span class="text-brand-text-muted">Estoque total:</span>
+                <span class="font-medium">
+                  {{ formatNumber(form.stockQuantity) }}{{ form.baseUnit }} (
+                  {{ formatNumber(form.stockPackages) }} {{ purchaseUnitLabel }}
+                  )
+                </span>
+              </div>
+            </div>
           </div>
 
           <!-- Ações -->
@@ -341,7 +397,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { ingredientsService } from '@/services/ingredients'
 
 const props = defineProps({})
@@ -365,6 +421,7 @@ const form = ref({
   baseUnit: 'g',
   lastUnitCost: 0,
   stockQuantity: 0,
+  stockPackages: 0,
   minStockAlert: 0,
 })
 
@@ -390,6 +447,40 @@ const formatPrice = (price) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price)
 
 const formatNumber = (num) => Number(num).toLocaleString('pt-BR')
+
+// Label amigável da unidade de compra
+const purchaseUnitLabels = { cx: 'Caixa', kg: 'Kg', l: 'Litro', un: 'Unidade' }
+const purchaseUnitLabel = computed(() => purchaseUnitLabels[form.value.purchaseUnit] || form.value.purchaseUnit)
+
+// Placeholder dinâmico do tamanho da embalagem conforme a unidade base
+const packageSizePlaceholder = computed(() => {
+  switch (form.value.baseUnit) {
+    case 'g': return '395'
+    case 'ml': return '1000'
+    case 'un': return '12'
+    default: return '0'
+  }
+})
+
+// Custo por embalagem (valor pago na compra)
+const costPerPackage = computed(() => formatPrice(form.value.lastUnitCost))
+
+// Custo por unidade base (para uso nas receitas)
+const costPerBaseUnit = computed(() => {
+  const ps = Number(form.value.packageSize) || 1
+  return formatPrice(form.value.lastUnitCost / ps)
+})
+
+// Sincronização automática: estoque em embalagens <-> estoque total na unidade base
+watch(() => form.value.stockPackages, (v) => {
+  const ps = Number(form.value.packageSize) || 1
+  form.value.stockQuantity = Math.max(0, Number(v) * ps)
+})
+
+watch(() => form.value.stockQuantity, (v) => {
+  const ps = Number(form.value.packageSize) || 1
+  form.value.stockPackages = ps > 0 ? Math.max(0, Number(v) / ps) : 0
+})
 
 onMounted(() => {
   loadIngredients()
@@ -418,6 +509,7 @@ function openIngredientModal(item = null) {
       baseUnit: item.baseUnit,
       lastUnitCost: item.lastUnitCost,
       stockQuantity: item.stockQuantity,
+      stockPackages: item.packageSize > 0 ? item.stockQuantity / item.packageSize : 0,
       minStockAlert: item.minStockAlert,
     }
   } else {
@@ -430,6 +522,7 @@ function openIngredientModal(item = null) {
       baseUnit: 'g',
       lastUnitCost: 0,
       stockQuantity: 0,
+      stockPackages: 0,
       minStockAlert: 0,
     }
   }
@@ -446,6 +539,9 @@ async function saveIngredient() {
 
   savingIngredient.value = true
   try {
+    // Garante consistência: estoque em embalagens * tamanho = total na unidade base
+    form.value.stockQuantity = Math.max(0, Number(form.value.stockPackages) * Number(form.value.packageSize))
+
     const payload = {
       name: form.value.name,
       brand: form.value.brand,
