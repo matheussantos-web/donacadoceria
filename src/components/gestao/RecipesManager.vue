@@ -86,14 +86,15 @@
     <!-- Modal de receita com construtor de ingredientes -->
     <div
       v-if="showRecipeModal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto bg-black/60 backdrop-blur-sm"
       @click.self="closeRecipeModal"
     >
       <div
-        class="bg-brand-surface border border-gray-100 rounded-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto"
+        class="w-full max-w-lg max-h-[92dvh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden bg-brand-surface border border-gray-100"
         @click.stop
       >
-        <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+        <!-- Cabeçalho fixo -->
+        <div class="shrink-0 border-b p-4 sm:p-6 border-gray-100 flex items-center justify-between bg-brand-surface">
           <h3 class="font-display font-medium text-lg text-brand-text-primary">
             {{ editingRecipe ? 'Editar Receita' : 'Nova Receita' }}
           </h3>
@@ -106,195 +107,199 @@
           </button>
         </div>
 
-        <form @submit.prevent="saveRecipe" class="p-6 space-y-6">
-          <!-- Nome e categoria -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-brand-text-muted mb-1">
-                Nome da receita
-              </label>
-              <input
-                v-model="form.name"
-                type="text"
-                required
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-brand-text-muted mb-1">
-                Categoria
-              </label>
-              <select
-                v-model="form.category"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
-              >
-                <option value="Massas">Massas</option>
-                <option value="Recheios">Recheios</option>
-                <option value="Coberturas">Coberturas</option>
-                <option value="Doces">Doces</option>
-                <option value="Sobremesas">Sobremesas</option>
-                <option value="Embalagens">Embalagens</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Rendimento -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-brand-text-muted mb-1">
-                Quantidade do rendimento
-              </label>
-              <input
-                v-model.number="form.yieldQuantity"
-                type="number"
-                step="0.01"
-                min="0.01"
-                required
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-brand-text-muted mb-1">
-                Unidade do rendimento
-              </label>
-              <select
-                v-model="form.yieldUnit"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
-              >
-                <option value="g">Grama (g)</option>
-                <option value="un">Unidade (un)</option>
-                <option value="fatias">Fatias</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Custos indiretos -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-brand-text-muted mb-1">
-                Custos indiretos (%) — gás, energia, perdas
-              </label>
-              <input
-                v-model.number="form.overheadPercent"
-                type="number"
-                step="0.01"
-                min="0"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-brand-text-muted mb-1">
-                Mão de obra (R$)
-              </label>
-              <input
-                v-model.number="form.laborCost"
-                type="number"
-                step="0.01"
-                min="0"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
-              />
-            </div>
-          </div>
-
-          <!-- Observações -->
-          <div>
-            <label class="block text-sm font-medium text-brand-text-muted mb-1">
-              Observações
-            </label>
-            <textarea
-              v-model="form.notes"
-              rows="2"
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
-            />
-          </div>
-
-          <!-- Ingredientes da receita -->
-          <div class="pt-4 border-t border-gray-100">
-            <div class="flex items-center justify-between mb-3">
-              <h4 class="font-medium text-brand-text-primary">Ingredientes</h4>
-              <button
-                @click="addIngredientRow()"
-                class="text-xs text-brand-primary underline hover:text-brand-accent"
-              >
-                + Adicionar insumo
-              </button>
-            </div>
-
-            <div
-              v-for="(ing, idx) in form.recipeIngredients"
-              :key="idx"
-              class="flex gap-2 items-end mb-2 bg-brand-bg/50 p-3 rounded border border-gray-100"
-            >
-              <!-- Insumo -->
-              <select
-                v-model="ing.ingredientId"
-                class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm"
-              >
-                <option value="">Selecionar insumo...</option>
-                <option
-                  v-for="ingredient in availableIngredients"
-                  :key="ingredient.id"
-                  :value="ingredient.id"
+        <!-- Corpo rolável -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-brand-surface">
+          <form id="recipe-form" @submit.prevent="saveRecipe" class="space-y-6">
+            <!-- Nome e categoria -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-brand-text-muted mb-1">
+                  Nome da receita
+                </label>
+                <input
+                  v-model="form.name"
+                  type="text"
+                  required
+                  class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-brand-text-muted mb-1">
+                  Categoria
+                </label>
+                <select
+                  v-model="form.category"
+                  class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
                 >
-                  {{ ingredient.name }} ({{ ingredient.costPerBaseUnit }} R$/{{ ingredient.baseUnit }})
-                </option>
-              </select>
+                  <option value="Massas">Massas</option>
+                  <option value="Recheios">Recheios</option>
+                  <option value="Coberturas">Coberturas</option>
+                  <option value="Doces">Doces</option>
+                  <option value="Sobremesas">Sobremesas</option>
+                  <option value="Embalagens">Embalagens</option>
+                </select>
+              </div>
+            </div>
 
-              <!-- Quantidade -->
-              <input
-                v-model.number="ing.quantityUsed"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Qtd"
-                class="w-24 px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm text-right"
+            <!-- Rendimento -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-brand-text-muted mb-1">
+                  Quantidade do rendimento
+                </label>
+                <input
+                  v-model.number="form.yieldQuantity"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  required
+                  class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-brand-text-muted mb-1">
+                  Unidade do rendimento
+                </label>
+                <select
+                  v-model="form.yieldUnit"
+                  class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                >
+                  <option value="g">Grama (g)</option>
+                  <option value="un">Unidade (un)</option>
+                  <option value="fatias">Fatias</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Custos indiretos -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-brand-text-muted mb-1">
+                  Custos indiretos (%) — gás, energia, perdas
+                </label>
+                <input
+                  v-model.number="form.overheadPercent"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-brand-text-muted mb-1">
+                  Mão de obra (R$)
+                </label>
+                <input
+                  v-model.number="form.laborCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                />
+              </div>
+            </div>
+
+            <!-- Observações -->
+            <div>
+              <label class="block text-sm font-medium text-brand-text-muted mb-1">
+                Observações
+              </label>
+              <textarea
+                v-model="form.notes"
+                rows="2"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
               />
+            </div>
 
-              <!-- Custo do item -->
-              <span class="w-20 text-xs text-brand-text-muted text-right">
-                {{ ing.ingredientId ? formatPrice(ing.costContribution || 0) : '—' }}
-              </span>
+            <!-- Ingredientes da receita -->
+            <div class="pt-4 border-t border-gray-100">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-medium text-brand-text-primary">Ingredientes</h4>
+                <button
+                  @click="addIngredientRow()"
+                  class="text-xs text-brand-primary underline hover:text-brand-accent"
+                >
+                  + Adicionar insumo
+                </button>
+              </div>
 
-              <!-- Remover -->
-              <button
-                @click="removeIngredientRow(idx)"
-                class="text-red-600 hover:text-red-800 text-xs"
+              <div
+                v-for="(ing, idx) in form.recipeIngredients"
+                :key="idx"
+                class="flex gap-2 items-end mb-2 bg-brand-bg/50 p-3 rounded border border-gray-100"
               >
-                ✕
-              </button>
-            </div>
+                <!-- Insumo -->
+                <select
+                  v-model="ing.ingredientId"
+                  class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm"
+                >
+                  <option value="">Selecionar insumo...</option>
+                  <option
+                    v-for="ingredient in availableIngredients"
+                    :key="ingredient.id"
+                    :value="ingredient.id"
+                  >
+                    {{ ingredient.name }} ({{ ingredient.costPerBaseUnit }} R$/{{ ingredient.baseUnit }})
+                  </option>
+                </select>
 
-            <div v-if="form.recipeIngredients.length === 0" class="text-brand-text-muted text-xs mt-2">
-              Nenhum insumo adicionado ainda.
-            </div>
+                <!-- Quantidade -->
+                <input
+                  v-model.number="ing.quantityUsed"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Qtd"
+                  class="w-24 px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm text-right"
+                />
 
-            <!-- Custo total calculado -->
-            <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between">
-              <span class="font-medium text-brand-text-primary">Custo Total da Receita:</span>
-              <span class="font-display font-medium text-xl text-brand-text-primary">
-                R$ {{ formatPrice(recipeTotalCost) }}
-              </span>
-            </div>
-          </div>
+                <!-- Custo do item -->
+                <span class="w-20 text-xs text-brand-text-muted text-right">
+                  {{ ing.ingredientId ? formatPrice(ing.costContribution || 0) : '—' }}
+                </span>
 
-          <!-- Ações -->
-          <div class="flex items-center justify-end gap-3 pt-6">
-            <button
-              type="button"
-              @click="closeRecipeModal"
-              class="px-4 py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              :disabled="savingRecipe"
-              class="btn-primary px-6 py-2 text-sm font-medium disabled:opacity-50 disabled:pointer-events-none"
-            >
-              {{ savingRecipe ? 'Salvando...' : editingRecipe ? 'Atualizar' : 'Criar' }}
-            </button>
-          </div>
-        </form>
+                <!-- Remover -->
+                <button
+                  @click="removeIngredientRow(idx)"
+                  class="text-red-600 hover:text-red-800 text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div v-if="form.recipeIngredients.length === 0" class="text-brand-text-muted text-xs mt-2">
+                Nenhum insumo adicionado ainda.
+              </div>
+
+              <!-- Custo total calculado -->
+              <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between">
+                <span class="font-medium text-brand-text-primary">Custo Total da Receita:</span>
+                <span class="font-display font-medium text-xl text-brand-text-primary">
+                  {{ formatPrice(recipeTotalCost) }}
+                </span>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Rodapé fixo -->
+        <div class="shrink-0 border-t p-4 sm:p-6 border-gray-100 bg-brand-surface flex items-center justify-end gap-3">
+          <button
+            type="button"
+            @click="closeRecipeModal"
+            class="px-4 py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form="recipe-form"
+            :disabled="savingRecipe"
+            class="btn-primary px-6 py-2 text-sm font-medium disabled:opacity-50 disabled:pointer-events-none"
+          >
+            {{ savingRecipe ? 'Salvando...' : editingRecipe ? 'Atualizar' : 'Criar' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
