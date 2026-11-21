@@ -163,6 +163,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { supabase } from '@/lib/supabase'
 import { ingredientsService } from '@/services/ingredients'
 import { invoicesService } from '@/services/invoices'
 import { invoiceItemsService } from '@/services/invoiceItems'

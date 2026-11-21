@@ -48,8 +48,8 @@
         </button>
       </div>
 
-      <!-- Câmera / QR Code -->
-      <div v-if="cameraModeActive" class="mt-6">
+      <!-- Câmera / QR Code (v-show para manter o elemento no DOM) -->
+      <div v-show="cameraModeActive" class="mt-6">
         <div class="flex items-center justify-between mb-3">
           <span class="text-xs text-brand-text-muted">Leitura de QR Code</span>
           <button
@@ -149,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue"
+import { ref, onMounted, onUnmounted, nextTick } from "vue"
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode"
 import { parseNfceCopiedText } from "@/utils/parseNfceText"
 
@@ -178,7 +178,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  stopScanner()
+  stopCameraMode()
 })
 
 async function initScanner() {
@@ -187,6 +187,11 @@ async function initScanner() {
     return
   }
   try {
+    await nextTick()
+    if (!document.getElementById("qr-reader")) {
+      console.warn("[NfceScannerModal] Elemento qr-reader não encontrado no DOM.")
+      return
+    }
     qrReader.value = new Html5Qrcode("qr-reader", {
       formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
       verbose: false,
@@ -212,7 +217,7 @@ function startCameraMode() {
 
 function stopCameraMode() {
   cameraModeActive.value = false
-  stopScanner()
+  stopAndClearScanner()
 }
 
 async function toggleCamera() {
@@ -226,6 +231,11 @@ async function toggleCamera() {
 
 async function startScanner() {
   try {
+    await nextTick()
+    if (!document.getElementById("qr-reader")) {
+      scanError.value = "Elemento da câmera não encontrado. Tente novamente."
+      return
+    }
     await qrReader.value.start(
       { facingMode: "environment" },
       {
@@ -256,11 +266,24 @@ async function stopScanner() {
   if (!qrReader.value || !isCameraOn.value) return
   try {
     await qrReader.value.stop()
+    await qrReader.value.clear()
     isCameraOn.value = false
     scanning.value = false
   } catch (err) {
     console.error(err)
   }
+}
+
+function stopAndClearScanner() {
+  if (!qrReader.value) return
+  qrReader.value
+    .stop()
+    .then(() => qrReader.value.clear())
+    .catch(() => {})
+    .finally(() => {
+      isCameraOn.value = false
+      scanning.value = false
+    })
 }
 
 function onScanSuccess(decodedText) {
@@ -312,13 +335,13 @@ async function pasteFromClipboard() {
   try {
     const text = await navigator.clipboard.readText()
     if (!text || !text.trim()) {
-      scanError.value = 'Área de transferência vazia.'
+      scanError.value = "Área de transferência vazia."
       return
     }
     pasteInput.value = text.trim()
     await processPasteInput()
   } catch (err) {
-    scanError.value = 'Não foi possível acessar a área de transferência. Verifique as permissões do navegador.'
+    scanError.value = "Não foi possível acessar a área de transferência. Verifique as permissões do navegador."
     console.error(err)
   }
 }
