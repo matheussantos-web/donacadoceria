@@ -289,25 +289,38 @@ async function confirmReconciliation() {
 
       let ingredientId = item.selectedIngredientId
 
-      // Se modo "novo insumo", criar o insumo primeiro (antes de vincular ao invoice_item)
-      if (item.newIngredientMode && item.newIngredientName) {
-        const { data: newIng, error: newIngErr } = await ingredientsService.create({
-          name: item.newIngredientName,
-          category: item.newCategory,
-          purchase_unit: 'cx',
-          package_size: item.newPackageSize,
-          base_unit: item.newBaseUnit,
-          last_unit_cost: item.unit_price * item.newPackageSize, // custo da embalagem
-          stock_quantity: 0,
-          min_stock_alert: 0,
-        })
-        if (newIngErr) throw newIngErr
-        ingredientId = newIng.id
+      // Se o usuário selecionou "__NEW__" no dropdown, entra no modo de criação de novo insumo
+      if (ingredientId === '__NEW__') {
+        item.newIngredientMode = true
       }
 
-      if (!ingredientId) continue
+      // Se modo "novo insumo", criar o insumo primeiro (antes de vincular ao invoice_item)
+      if (item.newIngredientMode && item.newIngredientName) {
+        const newIngredientId = crypto.randomUUID()
+        const { error: newIngErr } = await supabase
+          .from('ingredients')
+          .insert({
+            id: newIngredientId,
+            name: item.newIngredientName,
+            category: item.newCategory,
+            purchase_unit: 'cx',
+            package_size: item.newPackageSize,
+            base_unit: item.newBaseUnit,
+            last_unit_cost: item.unit_price * item.newPackageSize,
+            stock_quantity: 0,
+            min_stock_alert: 0,
+          })
+        if (newIngErr) throw newIngErr
+        ingredientId = newIngredientId
+      }
 
-      // Inserir item da nota com invoice_id explícito
+      // Validação: ingredient_id nunca pode ser "__NEW__", vazio ou não-UUID
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(ingredientId))
+      if (!isValidUuid) {
+        throw new Error(`Insumo inválido para "${item.raw_description}": selecione um insumo existente ou cadastre um novo.`)
+      }
+
+      // Inserir item da nota com invoice_id e ingredient_id explícitos
       const { error: itemErr } = await supabase
         .from('invoice_items')
         .insert({
