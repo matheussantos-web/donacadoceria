@@ -203,6 +203,7 @@
             >
               <select
                 v-model="comp.recipeId"
+                @change="calcTotalCost()"
                 class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm"
               >
                 <option value="">Selecionar receita...</option>
@@ -217,10 +218,17 @@
                 step="0.01"
                 min="0.01"
                 placeholder="Qtd"
+                @input="calcTotalCost()"
                 class="w-24 px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm text-right"
               />
 
+              <!-- Custo unitário da linha -->
               <span class="w-20 text-xs text-brand-text-muted text-right">
+                {{ comp.recipeId ? formatPrice(getLineUnitCost(comp)) : '—' }}
+              </span>
+
+              <!-- Subtotal da linha -->
+              <span class="w-24 text-xs text-brand-text-muted text-right font-medium">
                 {{ comp.recipeId ? formatPrice(comp.costContribution || 0) : '—' }}
               </span>
 
@@ -387,13 +395,6 @@ watch(
   }
 )
 
-watch(
-  () => form.finalPrice,
-  () => {
-    calcMarginFromFinalPrice()
-  }
-)
-
 const productTotalCost = computed(() => {
   return (form.components || []).reduce((sum, comp) => sum + (comp.costContribution || 0), 0)
 })
@@ -461,7 +462,7 @@ async function loadRecipes() {
   }
 }
 
-function openProductModal(product = null) {
+async function openProductModal(product = null) {
   editingProduct.value = product
   if (product) {
     form.value = {
@@ -473,6 +474,18 @@ function openProductModal(product = null) {
       finalPrice: product.finalPrice,
       publishedToCatalog: product.publishedToCatalog,
       components: [],
+    }
+    // Carregar componentes vinculados ao produto ao abrir edição
+    try {
+      const items = await pricedProductComponentsService.listByProduct(product.id)
+      form.value.components = items.map((item) => ({
+        recipeId: item.recipeId,
+        multiplierOrQty: Number(item.multiplierOrQty) || 0,
+        costContribution: 0,
+      }))
+      calcTotalCost()
+    } catch (err) {
+      console.warn('[PricingManager] Não foi possível carregar componentes do produto.', err.message)
     }
   } else {
     form.value = {
@@ -503,6 +516,11 @@ function addComponentRow() {
   })
 }
 
+function getLineUnitCost(comp) {
+  const recipe = availableRecipes.value.find((r) => r.id === comp.recipeId)
+  return recipe ? Number(recipe.unitCost || 0) : 0
+}
+
 function removeComponent(idx) {
   form.components.splice(idx, 1)
   calcTotalCost()
@@ -513,21 +531,31 @@ function calcTotalCost() {
   form.components.forEach((comp) => {
     const recipe = availableRecipes.value.find((r) => r.id === comp.recipeId)
     if (recipe) {
-      comp.costContribution = comp.multiplierOrQty * recipe.unitCost
+      comp.costContribution = round2(Number(comp.multiplierOrQty || 0) * Number(recipe.unitCost || 0))
       total += comp.costContribution
     } else {
       comp.costContribution = 0
     }
   })
-  form.totalProductionCost = total
+  form.totalProductionCost = round2(total)
+}
+
+function round2(v) {
+  return Math.round(v * 100) / 100
 }
 
 function calcSuggestedPrice() {
-  // Auto-calculate suggested price from margin
+  const cost = productTotalCost.value
+  const margin = Number(form.targetMarginPercent || 0)
+  if (margin >= 100) {
+    form.finalPrice = 0
+    return
+  }
+  form.finalPrice = round2(cost / (1 - margin / 100))
 }
 
 function calcMarginFromFinalPrice() {
-  // Auto-calculate margin from final price
+  // Mantido para retrocompatibilidade; a margem real é exibida via computed `realMargin`.
 }
 
 async function saveProduct() {
