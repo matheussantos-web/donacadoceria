@@ -388,6 +388,11 @@ const realMargin = computed(() => {
 
 const formatPercent = (num) => Number(num).toFixed(1)
 
+const formatPrice = (price) => {
+  if (price == null || Number.isNaN(Number(price))) return 'R$ 0,00'
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(price))
+}
+
 onMounted(() => {
   loadProducts()
   loadRecipes()
