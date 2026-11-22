@@ -23,9 +23,7 @@
           class="p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
           aria-label="Fechar"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
+          <X class="w-5 h-5" />
         </button>
       </div>
 
@@ -72,9 +70,7 @@
         <!-- Aviso de duplicata -->
         <div v-if="duplicateWarning" class="bg-amber-50 border border-amber-100 rounded-lg p-3 mb-4">
           <span class="text-sm text-amber-800 flex items-center gap-2">
-            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
+            <AlertTriangle class="w-4 h-4 text-amber-600" />
             Esta nota ({{ duplicateWarning.access_key }}) já foi importada anteriormente.
           </span>
         </div>
@@ -221,6 +217,7 @@ import { invoicesService } from '@/services/invoices'
 import { invoiceItemsService } from '@/services/invoiceItems'
 import { recalculateCostsService } from '@/services/recalculateCosts'
 import { financeService } from '@/services/finance'
+import { X, AlertTriangle } from 'lucide-vue-next'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },

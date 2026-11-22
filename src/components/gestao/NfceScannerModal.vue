@@ -10,9 +10,7 @@
           class="absolute top-2 right-2 p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
           aria-label="Fechar"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
+          <X class="w-5 h-5" />
         </button>
       </div>
 
@@ -23,9 +21,7 @@
           :disabled="cameraModeActive"
           class="w-full btn-primary py-3 text-sm font-medium flex items-center justify-center gap-2"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
+          <Camera class="w-5 h-5" />
           {{ cameraModeActive ? "Câmera ativa..." : "1. Escanear QR Code (Câmera)" }}
         </button>
 
@@ -33,9 +29,7 @@
           @click="showPasteMode = true"
           class="w-full py-3 text-sm font-medium text-brand-primary underline hover:text-brand-accent bg-brand-bg/50 rounded-lg border border-gray-200"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
-          </svg>
+          <Clipboard class="w-5 h-5" />
           2. Colar Texto ou Link da Nota
         </button>
 
@@ -43,9 +37,7 @@
           @click="openManualEntry"
           class="w-full py-3 text-sm font-medium text-brand-text-muted hover:bg-gray-50 rounded-lg border border-gray-200"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
+          <Layout class="w-5 h-5" />
           3. Lançar Compra Manualmente
         </button>
       </div>
@@ -180,6 +172,7 @@ import { ref, onMounted, onUnmounted, nextTick } from "vue"
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode"
 import { parseNfceCopiedText } from "@/utils/parseNfceText"
 import { invoicesService } from "@/services/invoices"
+import { X, Camera, Clipboard, Layout } from "lucide-vue-next"
 
 const props = defineProps({
   visible: { type: Boolean, default: false },

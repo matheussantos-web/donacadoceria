@@ -14,14 +14,7 @@
         @click="openOrderModal()"
         class="btn-primary px-4 py-2 text-sm font-medium flex items-center gap-2"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 4v16m8-8H4"
-          ></path>
-        </svg>
+        <Plus class="w-4 h-4" />
         Novo Pedido
       </button>
     </div>
@@ -260,9 +253,7 @@
             class="p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
             aria-label="Fechar"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
+            <X class="w-5 h-5" />
           </button>
         </div>
 
@@ -384,9 +375,7 @@
                   @click="removeOrderItem(idx)"
                   class="text-red-600 hover:text-red-800 text-xs"
                 >
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
+                  <X class="w-3 h-3" />
                 </button>
               </div>
 
@@ -492,6 +481,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { ordersService } from '@/services/orders'
 import { pricedProductsService } from '@/services/recipes'
 import { useToast } from '@/composables/useToast'
+import { X, Plus } from 'lucide-vue-next'
 
 const props = defineProps({})
 const emit = defineEmits([])

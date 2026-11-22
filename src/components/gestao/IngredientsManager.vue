@@ -14,14 +14,7 @@
         @click="openIngredientModal()"
         class="btn-primary px-4 py-2 text-sm font-medium flex items-center gap-2"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 4v16m8-8H4"
-          ></path>
-        </svg>
+        <Plus class="w-4 h-4" />
         Novo Insumo
       </button>
     </div>
@@ -32,13 +25,7 @@
       class="bg-red-50 border border-red-100 rounded-xl p-4"
     >
       <h3 class="font-medium text-red-800 text-sm mb-2 flex items-center gap-2">
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fill-rule="evenodd"
-            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-            clip-rule="evenodd"
-          ></path>
-        </svg>
+        <AlertTriangle class="w-5 h-5 text-red-600" />
         {{ lowStockIngredients.length }} item(s) abaixo do estoque mínimo
       </h3>
       <div class="overflow-x-auto mt-2">
@@ -221,9 +208,7 @@
             class="p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
             aria-label="Fechar"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
+            <X class="w-5 h-5" />
           </button>
         </div>
 
@@ -467,9 +452,7 @@
           class="p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
           aria-label="Fechar"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
+          <X class="w-5 h-5" />
         </button>
       </div>
 
@@ -605,6 +588,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { ingredientsService } from '@/services/ingredients'
 import { stockMovementsService } from '@/services/stockMovements'
 import { useToast } from '@/composables/useToast'
+import { Plus, AlertTriangle, X } from 'lucide-vue-next'
 
 const props = defineProps({})
 const emit = defineEmits([])

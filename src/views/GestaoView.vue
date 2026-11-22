@@ -21,9 +21,7 @@
             class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-brand-text-muted hover:text-brand-primary transition-colors"
           >
             <span class="text-xs">Sair</span>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
+            <X class="w-4 h-4" />
           </button>
         </div>
 
@@ -42,9 +40,7 @@
                 </p>
               </div>
               <div class="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center">
-                <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.142-3.414l5-5A2 2 0 009 10.172V10L8 4z"></path>
-                </svg>
+                <Package class="w-5 h-5 text-brand-primary" />
               </div>
             </div>
           </div>
@@ -52,9 +48,7 @@
             @click="showScanner = true"
             class="bg-gradient-to-r from-rose-700 to-pink-700 hover:from-rose-800 hover:to-pink-800 text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-rose-900/20 hover:shadow-rose-900/30 transition-all duration-300 flex items-center gap-2"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
+            <QrCode class="w-4 h-4" />
             <span>Importar NFC-e</span>
           </button>
         </div>
@@ -70,14 +64,14 @@
               v-for="module in modules"
               :key="module.key"
               @click="activeModule = module.key"
-              class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 whitespace-nowrap"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 shrink-0 whitespace-nowrap min-w-[120px] sm:min-w-auto"
               :class="
                 activeModule === module.key
                   ? 'bg-brand-primary text-white shadow-md shadow-rose-900/20'
                   : 'text-brand-text-muted hover:bg-gray-100 hover:text-brand-text-primary'
               "
             >
-              <span class="text-sm">{{ module.icon }}</span>
+              <component :is="moduleIcons[module.key]" class="w-4 h-4" />
               <span>{{ module.label }}</span>
               <span
                 v-if="module.badge"
@@ -111,10 +105,8 @@
             <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-rose-900/5 hover:-translate-y-0.5 transition-all duration-300 group">
               <div class="flex items-center justify-between mb-3">
                 <div class="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5c1 0 1 0 1-1 0-1-1-2-2-2-1 0-1 0-1 1 0 1 1 0 1 1 1v4c0 1 1 0 1 0 1-1 1-2 2-2s1 0 1 0 1 1v-4c0-1 1-2 2-2 1 0 1 0 1 1 0 1 1 0 1-1z"></path>
-                    </svg>
-                  </div>
+                  <Package class="w-5 h-5 text-brand-primary" />
+                </div>
                 <span
                   class="px-2 py-0.5 rounded-full text-[10px] font-bold"
                   :class="
@@ -136,9 +128,7 @@
             <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-rose-900/5 hover:-translate-y-0.5 transition-all duration-300 group fadeInFast">
               <div class="flex items-center justify-between mb-3">
                 <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
+                  <AlertTriangle class="w-5 h-5 text-amber-600" />
                 </div>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
                   Baixo
@@ -154,9 +144,7 @@
             <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-rose-900/5 hover:-translate-y-0.5 transition-all duration-300 group">
               <div class="flex items-center justify-between mb-3">
                 <div class="w-10 h-10 rounded-xl bg-brand-secondary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <svg class="w-5 h-5 text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2v2.01M12 18v-6m0 0v6m0-3v6m0-6h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
+                  <BookOpen class="w-5 h-5 text-brand-secondary" />
                 </div>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600">
                   Ativas
@@ -172,9 +160,7 @@
             <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-rose-900/5 hover:-translate-y-0.5 transition-all duration-300 group">
               <div class="flex items-center justify-between mb-3">
                 <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0v1m0 0h.01M7 3h4v1H7zm0 16v-1h-.01M14.707 15.707a1 1 0 010 1.414l1 1a1 1 0 01-1.414 1.414l-1-1a1 1 0 011.414-1.414zM9.707 15.707a1 1 0 01-1.414 0l-1-1a1 1 0 010-1.414l1-1a1 1 0 011.414 1.414l-1 1a1 1 0 010 1.414zM17 11l1 1m0 0l1 1m-1-1l1-1m-1 1v-1m0 0v-1a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4zM13 6v6m0 0l-1-1m1 1l1 1m-1-1l1-1m0 0V6m0 0h-1a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V6a1 1 0 00-1-1h-4a1 1 0 00-1 1z"></path>
-                  </svg>
+                  <Tag class="w-5 h-5 text-purple-600" />
                 </div>
                 <span
                   v-if="productsNeedingPriceReview.length > 0"
@@ -193,9 +179,7 @@
             <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-rose-900/5 hover:-translate-y-0.5 transition-all duration-300 group">
               <div class="flex items-center justify-between mb-3">
                 <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2-3 .895-3-2 1.343-2-3-2m0 8c1.657 0 3-.895 3-2 1.343-2 3-2 3-.895 0-2-1.343-2-3-2z"></path>
-                  </svg>
+                  <Wallet class="w-5 h-5 text-emerald-600" />
                 </div>
                 <span
                   class="px-2 py-0.5 rounded-full text-[10px] font-bold"
@@ -225,9 +209,7 @@
             class="bg-amber-50 border border-amber-100 rounded-2xl p-5 shadow-sm fadeInUp"
           >
             <div class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.172 3 1.732 3z"></path>
-              </svg>
+              <AlertTriangle class="w-5 h-5 text-amber-600 mt-0.5" />
               <div>
                 <p class="font-medium text-amber-800 mb-1">
                   {{ productsNeedingPriceReview.length }} produto(s) precisam de revisão de preço
@@ -240,7 +222,7 @@
                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold rounded-lg transition-colors"
                 >
                   Ir para Precificação
-                  <span class="text-xs">→</span>
+                  <ChevronRight class="w-3 h-3" />
                 </button>
               </div>
             </div>
@@ -248,9 +230,7 @@
 
           <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-6 shadow-sm fadeInUp">
             <h3 class="font-display font-bold text-lg text-brand-text-primary mb-5 flex items-center gap-2">
-              <svg class="w-5 h-5 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V4v-2c0-2.21-3.582-4-8-4s-8 1.79-8 4zm0 0v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M12 7v10"></path>
-              </svg>
+              <GitBranch class="w-5 h-5 text-brand-primary" />
               Fluxo do Atelier
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -309,9 +289,7 @@
             @click="showScanner = true"
             class="btn-primary px-6 py-3 text-sm font-medium flex items-center gap-2 shadow-lg shadow-rose-900/10 hover:shadow-rose-900/20"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
+            <QrCode class="w-4 h-4" />
             Escanear Nota Fiscal
           </button>
         </div>
@@ -350,6 +328,20 @@ import { pricedProductsService } from "@/services/recipes"
 import { ordersService } from "@/services/orders"
 import { financeService } from "@/services/finance"
 import { useAuth } from "@/composables/useAuth"
+import {
+  X,
+  Package,
+  QrCode,
+  LayoutDashboard,
+  ClipboardList,
+  Wallet,
+  AlertTriangle,
+  BookOpen,
+  Tag,
+  ReceiptText,
+  ChevronRight,
+  GitBranch,
+} from "lucide-vue-next"
 
 const { signOut } = useAuth()
 const { toast, toasts, success, error, warning, info, dismiss: dismissToast } = useToast()
@@ -430,14 +422,24 @@ const productsNeedingPriceReview = computed(() =>
   })
 )
 
+const moduleIcons = {
+  dashboard: LayoutDashboard,
+  pedidos: ClipboardList,
+  financeiro: Wallet,
+  estoque: Package,
+  receitas: BookOpen,
+  precificacao: Tag,
+  nfce: ReceiptText,
+}
+
 const modules = [
-  { key: "dashboard", label: "Visão Geral", icon: "📊", badge: null, badgeColor: null },
-  { key: "pedidos", label: "Pedidos", icon: "🍽️", badge: upcomingOrders.value.length > 0 ? upcomingOrders.value.length : null, badgeColor: "alert" },
-  { key: "financeiro", label: "Financeiro", icon: "💰", badge: null, badgeColor: null },
-  { key: "estoque", label: "Estoque", icon: "📦", badge: lowStockCount > 0 ? lowStockCount : null, badgeColor: "alert" },
-  { key: "receitas", label: "Receitas", icon: "📖", badge: recipes.value.length, badgeColor: null },
-  { key: "precificacao", label: "Precificação", icon: "🏷️", badge: productsNeedingPriceReview.value.length > 0 ? productsNeedingPriceReview.value.length : null, badgeColor: "warn" },
-  { key: "nfce", label: "NFC-e", icon: "🧾", badge: null, badgeColor: null },
+  { key: "dashboard", label: "Visão Geral", badge: null, badgeColor: null },
+  { key: "pedidos", label: "Pedidos", badge: upcomingOrders.value.length > 0 ? upcomingOrders.value.length : null, badgeColor: "alert" },
+  { key: "financeiro", label: "Financeiro", badge: null, badgeColor: null },
+  { key: "estoque", label: "Estoque", badge: lowStockCount > 0 ? lowStockCount : null, badgeColor: "alert" },
+  { key: "receitas", label: "Receitas", badge: recipes.value.length, badgeColor: null },
+  { key: "precificacao", label: "Precificação", badge: productsNeedingPriceReview.value.length > 0 ? productsNeedingPriceReview.value.length : null, badgeColor: "warn" },
+  { key: "nfce", label: "NFC-e", badge: null, badgeColor: null },
 ]
 
 const greeting = computed(() => {
