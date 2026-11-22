@@ -202,14 +202,29 @@
               class="flex gap-2 items-end mb-2 bg-brand-bg/50 p-3 rounded border border-gray-100"
             >
               <select
-                v-model="comp.recipeId"
-                @change="calcTotalCost()"
+                v-model="comp.componentValue"
+                @change="onComponentChange(comp, $event)"
                 class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm"
               >
-                <option value="">Selecionar receita...</option>
-                <option v-for="recipe in availableRecipes" :key="recipe.id" :value="recipe.id">
-                  {{ recipe.name }} (R$ {{ formatPrice(recipe.unitCost) }}/{{ recipe.yieldUnit }})
-                </option>
+                <option value="">Selecionar receita/embalagem...</option>
+                <optgroup label="Receitas">
+                  <option
+                    v-for="recipe in availableRecipes"
+                    :key="`recipe:${recipe.id}`"
+                    :value="`recipe:${recipe.id}`"
+                  >
+                    {{ recipe.name }} (R$ {{ formatPrice(recipe.unitCost) }}/{{ recipe.yieldUnit }})
+                  </option>
+                </optgroup>
+                <optgroup label="Embalagens e Insumos">
+                  <option
+                    v-for="ing in availableIngredients"
+                    :key="`ingredient:${ing.id}`"
+                    :value="`ingredient:${ing.id}`"
+                  >
+                    {{ ing.name }} ({{ ing.purchaseUnit === 'un' || ing.purchaseUnit === 'cx' || ing.purchaseUnit === 'pct' ? formatPrice(ing.lastUnitCost) : formatPrice(ing.costPerBaseUnit) }}{{ ing.purchaseUnit === 'un' || ing.purchaseUnit === 'cx' || ing.purchaseUnit === 'pct' ? '/embalagem' : '/g' }})
+                  </option>
+                </optgroup>
               </select>
 
               <input
@@ -224,12 +239,12 @@
 
               <!-- Custo unitário da linha -->
               <span class="w-20 text-xs text-brand-text-muted text-right">
-                {{ comp.recipeId ? formatPrice(getLineUnitCost(comp)) : '—' }}
+                {{ comp.componentValue ? formatPrice(getLineUnitCost(comp)) : '—' }}
               </span>
 
               <!-- Subtotal da linha -->
               <span class="w-24 text-xs text-brand-text-muted text-right font-medium">
-                {{ comp.recipeId ? formatPrice(comp.costContribution || 0) : '—' }}
+                {{ comp.componentValue ? formatPrice(comp.costContribution || 0) : '—' }}
               </span>
 
               <button
@@ -359,6 +374,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { recipesService, pricedProductsService, pricedProductComponentsService } from '@/services/recipes'
+import { ingredientsService } from '@/services/ingredients'
 import { useToast } from '@/composables/useToast'
 import { Plus, AlertTriangle, X } from 'lucide-vue-next'
 
@@ -369,6 +385,7 @@ const { success, error: toastError } = useToast()
 // State
 const products = ref([])
 const availableRecipes = ref([])
+const availableIngredients = ref([])
 const loading = ref(false)
 const error = ref('')
 
@@ -462,6 +479,20 @@ async function loadRecipes() {
   }
 }
 
+async function loadIngredients() {
+  try {
+    availableIngredients.value = await ingredientsService.list()
+  } catch (err) {
+    console.warn('[PricingManager] Não foi possível carregar insumos/embalagens.', err.message)
+  }
+}
+
+onMounted(() => {
+  loadProducts()
+  loadRecipes()
+  loadIngredients()
+})
+
 async function openProductModal(product = null) {
   editingProduct.value = product
   if (product) {
@@ -479,7 +510,9 @@ async function openProductModal(product = null) {
     try {
       const items = await pricedProductComponentsService.listByProduct(product.id)
       form.value.components = items.map((item) => ({
-        recipeId: item.recipeId,
+        componentType: item.componentType || 'recipe',
+        recipeId: item.recipeId || '',
+        ingredientId: item.ingredientId || '',
         multiplierOrQty: Number(item.multiplierOrQty) || 0,
         costContribution: 0,
       }))
@@ -510,13 +543,49 @@ function closeProductModal() {
 function addComponentRow() {
   if (!Array.isArray(form.value.components)) form.value.components = []
   form.value.components.push({
+    componentType: 'recipe',
+    componentValue: '',
     recipeId: '',
+    ingredientId: '',
     multiplierOrQty: 1,
     costContribution: 0,
   })
 }
 
+function onComponentChange(comp, value) {
+  if (!value || value === '') {
+    comp.componentType = 'recipe'
+    comp.recipeId = ''
+    comp.ingredientId = ''
+    comp.componentValue = ''
+    comp.costContribution = 0
+    calcTotalCost()
+    return
+  }
+  const [type, id] = value.split(':')
+  comp.componentType = type
+  if (type === 'recipe') {
+    comp.recipeId = id
+    comp.ingredientId = ''
+  } else {
+    comp.ingredientId = id
+    comp.recipeId = ''
+  }
+  comp.componentValue = value
+  calcTotalCost()
+}
+
 function getLineUnitCost(comp) {
+  if (comp.componentType === 'ingredient') {
+    const ing = availableIngredients.value.find((i) => i.id === comp.ingredientId)
+    if (!ing) return 0
+    // unidade de compra/embalagem (cx/un/pct) usa custo da embalagem inteira
+    if (ing.purchaseUnit === 'un' || ing.purchaseUnit === 'cx' || ing.purchaseUnit === 'pct') {
+      return round2(Number(ing.lastUnitCost || 0))
+    }
+    // peso/volume usa custo por unidade base (g/ml)
+    return round2(Number(ing.costPerBaseUnit || 0))
+  }
   const recipe = availableRecipes.value.find((r) => r.id === comp.recipeId)
   if (!recipe) return 0
   const unitCost = Number(recipe.unitCost) > 0
@@ -533,15 +602,31 @@ function removeComponent(idx) {
 function calcTotalCost() {
   let total = 0
   ;(form.value.components || []).forEach((comp) => {
-    const recipe = availableRecipes.value.find((r) => r.id === comp.recipeId)
-    if (recipe) {
-      const unitCost = Number(recipe.unitCost) > 0
-        ? Number(recipe.unitCost)
-        : (Number(recipe.yieldQuantity) > 0 ? Number(recipe.totalCost || 0) / Number(recipe.yieldQuantity) : Number(recipe.totalCost || 0))
-      comp.costContribution = round2(Number(comp.multiplierOrQty || 0) * unitCost)
-      total += comp.costContribution
+    if (comp.componentType === 'ingredient') {
+      const ing = availableIngredients.value.find((i) => i.id === comp.ingredientId)
+      if (ing) {
+        // unidade de compra/embalagem (cx/un/pct) usa custo da embalagem inteira
+        if (ing.purchaseUnit === 'un' || ing.purchaseUnit === 'cx' || ing.purchaseUnit === 'pct') {
+          comp.costContribution = round2(Number(comp.multiplierOrQty || 0) * Number(ing.lastUnitCost || 0))
+        } else {
+          // peso/volume usa custo por unidade base (g/ml)
+          comp.costContribution = round2(Number(comp.multiplierOrQty || 0) * Number(ing.costPerBaseUnit || 0))
+        }
+        total += comp.costContribution
+      } else {
+        comp.costContribution = 0
+      }
     } else {
-      comp.costContribution = 0
+      const recipe = availableRecipes.value.find((r) => r.id === comp.recipeId)
+      if (recipe) {
+        const unitCost = Number(recipe.unitCost) > 0
+          ? Number(recipe.unitCost)
+          : (Number(recipe.yieldQuantity) > 0 ? Number(recipe.totalCost || 0) / Number(recipe.yieldQuantity) : Number(recipe.totalCost || 0))
+        comp.costContribution = round2(Number(comp.multiplierOrQty || 0) * unitCost)
+        total += comp.costContribution
+      } else {
+        comp.costContribution = 0
+      }
     }
   })
   form.value.totalProductionCost = round2(total)
@@ -570,7 +655,7 @@ async function saveProduct() {
     toastError('Informe o nome do produto antes de salvar.')
     return
   }
-  if (!Array.isArray(form.value.components) || form.value.components.length === 0 || !form.value.components.some((c) => c.recipeId)) {
+  if (!Array.isArray(form.value.components) || form.value.components.length === 0 || !form.value.components.some((c) => (c.componentType === 'recipe' && c.recipeId) || (c.componentType === 'ingredient' && c.ingredientId))) {
     toastError('Adicione ao menos um componente (receita/embalagem) ao produto.')
     return
   }
@@ -602,10 +687,11 @@ async function saveProduct() {
       }
       // Create new components
       for (const comp of form.value.components) {
-        if (comp.recipeId) {
+        if ((comp.componentType === 'recipe' && comp.recipeId) || (comp.componentType === 'ingredient' && comp.ingredientId)) {
           await pricedProductComponentsService.create({
             pricedProductId: savedProduct.id,
-            recipeId: comp.recipeId,
+            recipeId: comp.componentType === 'recipe' ? comp.recipeId || null : null,
+            ingredientId: comp.componentType === 'ingredient' ? comp.ingredientId || null : null,
             multiplierOrQty: comp.multiplierOrQty,
           })
         }

@@ -196,11 +196,15 @@ export const pricedProductsService = {
         target_margin_percent: product.targetMarginPercent,
         final_price: product.finalPrice,
         published_to_catalog: product.publishedToCatalog,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', id)
       .select()
       .single()
-    if (error) throw error
+    if (error) {
+      console.error('[pricedProductsService.update] Erro Supabase:', error)
+      throw error
+    }
     return data ? toPricedProduct(data) : null
   },
 
@@ -217,15 +221,18 @@ export const pricedProductComponentsService = {
     if (!isSupabaseConfigured()) return []
     const { data, error } = await supabase
       .from('priced_product_components')
-      .select('*, recipes(*)')
+      .select('*, recipes(*), ingredients(*)')
       .eq('priced_product_id', pricedProductId)
       .order('id', { ascending: true })
     if (error) return []
     return (data || []).map((row) => ({
       id: row.id,
       pricedProductId: row.priced_product_id,
-      recipeId: row.recipe_id,
+      recipeId: row.recipe_id || null,
+      ingredientId: row.ingredient_id || null,
+      componentType: row.recipe_id ? 'recipe' : 'ingredient',
       recipe: row.recipes ? toRecipe(row.recipes) : null,
+      ingredient: row.ingredients ? toIngredient(row.ingredients) : null,
       multiplierOrQty: Number(row.multiplier_or_qty),
     }))
   },
@@ -236,7 +243,8 @@ export const pricedProductComponentsService = {
       .from('priced_product_components')
       .insert({
         priced_product_id: component.pricedProductId,
-        recipe_id: component.recipeId,
+        recipe_id: component.recipeId || null,
+        ingredient_id: component.ingredientId || null,
         multiplier_or_qty: component.multiplierOrQty,
       })
       .select()
