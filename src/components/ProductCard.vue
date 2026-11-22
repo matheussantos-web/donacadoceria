@@ -44,7 +44,7 @@ const handleImageError = (event) => {
 </script>
 
 <template>
-  <article class="card group relative flex flex-col h-full bg-brand-surface border-brand-primary/10">
+  <article class="card group relative flex flex-col h-full bg-brand-surface border-brand-primary/10 shadow-sm hover:shadow-xl transition-shadow duration-300">
     <!-- Image container with aspect ratio -->
     <div class="relative aspect-[4/5] overflow-hidden bg-gray-100">
       <!-- Image carousel when multiple images -->
@@ -144,7 +144,7 @@ const handleImageError = (event) => {
         </span>
         <button
           type="button"
-          class="w-full btn-primary text-sm py-3 whitespace-nowrap text-center"
+          class="w-full btn-primary text-sm py-3 whitespace-nowrap text-center active:scale-95 transition-transform duration-100"
           :disabled="!product.available || !whatsappStatus.isConfigured"
           @click="showCustomizer = true"
         >

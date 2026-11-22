@@ -21,7 +21,8 @@ export default {
       },
       fontFamily: {
         sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
-        display: ['Playfair Display', 'Georgia', 'serif'],
+        display: ['Fraunces', 'Georgia', 'serif'],
+        fraunces: ['Fraunces', 'Georgia', 'serif'],
       },
     },
   },

@@ -1,7 +1,7 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="closeModal">
     <div
-      class="bg-brand-surface border border-gray-100 rounded-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto"
+      class="bg-brand-surface border border-gray-100 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col"
       @click.stop
     >
       <div class="p-6 border-b border-gray-100 flex items-center justify-between">
@@ -13,7 +13,7 @@
           class="p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
           aria-label="Fechar"
         >
-          <span class="text-2xl">✕</span>
+          <X class="w-5 h-5" />
         </button>
       </div>
 
@@ -152,6 +152,7 @@
 import { ref, computed } from 'vue'
 import { formatPrice } from '@/data/products'
 import { useCart } from '@/composables/useCart'
+import { X } from 'lucide-vue-next'
 
 const props = defineProps({
   product: { type: Object, required: true },

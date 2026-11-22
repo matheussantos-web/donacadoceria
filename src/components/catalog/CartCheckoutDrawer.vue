@@ -23,7 +23,7 @@
           class="p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
           aria-label="Fechar"
         >
-          <span class="text-2xl">✕</span>
+          <X class="w-5 h-5" />
         </button>
       </div>
 
@@ -265,6 +265,7 @@ import { ref, computed } from 'vue'
 import { useCart } from '@/composables/useCart'
 import { formatPrice } from '@/data/products'
 import { getWhatsAppUrl, isWhatsAppConfigured } from '@/config/store'
+import { X, AlertTriangle } from 'lucide-vue-next'
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -311,7 +312,7 @@ async function sendToWhatsApp() {
       : `\nDelivery: Endereço a informar`
 
   const advanceWarning = minAdvanceHours.value > 0
-    ? `\n⚠️ Itens sob encomenda: prazo mínimo de ${minAdvanceHours.value}h.`
+    ? `\nItens sob encomenda: prazo mínimo de ${minAdvanceHours.value}h.`
     : ''
 
   const itemsText = formatItemsForWhatsApp()
@@ -328,7 +329,7 @@ async function sendToWhatsApp() {
     advanceWarning,
     orderNotes.value ? `\n*Observações:* ${orderNotes.value}` : '',
     '',
-    'Obrigado por escolher a Dona Cá Doceria! 🧁',
+    'Obrigado por escolher a Dona Cá Doceria!',
   ]
     .filter(Boolean)
     .join('\n')

@@ -43,14 +43,14 @@ const normalizedCategories = computed(() =>
 </script>
 
 <template>
-  <div class="sticky top-16 z-30 bg-brand-bg/95 backdrop-blur-sm border-b border-gray-100 py-3 px-4">
+  <div class="sticky top-[96px] z-30 bg-brand-bg/90 backdrop-blur-md border-b border-gray-100 py-3 px-4 scrollbar-hide">
     <div class="max-w-screen-xl mx-auto">
-      <div class="flex items-center gap-2 flex-wrap" role="group" aria-label="Filtrar por categoria">
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide" role="group" aria-label="Filtrar por categoria">
         <!-- "Todas" button -->
                 <button
                   type="button"
                   :class="[
-                    'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full whitespace-nowrap transition-colors duration-200',
+                    'flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full shrink-0 whitespace-nowrap transition-colors duration-200',
                     'focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2',
                     isActive('Todas')
                       ? 'bg-brand-primary text-white shadow-sm'
@@ -68,7 +68,7 @@ const normalizedCategories = computed(() =>
                     v-if="category.id !== 'Todas'"
                     type="button"
                   :class="[
-                    'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full whitespace-nowrap transition-all duration-200',
+                    'flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full shrink-0 whitespace-nowrap transition-all duration-200',
                     'focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2',
                     isActive(category.id)
                       ? 'bg-brand-primary text-white shadow-sm ring-2 ring-brand-primary ring-offset-2'
@@ -96,3 +96,13 @@ const normalizedCategories = computed(() =>
     </div>
   </div>
 </template>
+
+<style>
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+</style>
