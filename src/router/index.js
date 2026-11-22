@@ -13,7 +13,9 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/gestao',
+      name: 'home',
+      component: CatalogView,
+      meta: { layout: 'default', title: 'Catálogo — Dona Cá Doceria' },
     },
     {
       path: '/f/:code',
