@@ -225,6 +225,7 @@
                 <!-- Insumo -->
                 <select
                   v-model="ing.ingredientId"
+                  @change="onIngredientChange(ing)"
                   class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm"
                 >
                   <option value="">Selecionar insumo...</option>
@@ -233,7 +234,7 @@
                     :key="ingredient.id"
                     :value="ingredient.id"
                   >
-                    {{ ingredient.name }} ({{ ingredient.costPerBaseUnit }} R$/{{ ingredient.baseUnit }})
+                    {{ ingredient.name }} ({{ formatPrice(ingredient.costPerBaseUnit) }}/{{ ingredient.baseUnit }})
                   </option>
                 </select>
 
@@ -244,8 +245,19 @@
                   step="0.01"
                   min="0"
                   placeholder="Qtd"
+                  @input="calcTotalCost()"
                   class="w-24 px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm text-right"
                 />
+
+                <!-- Unidade (embalagem/cx ou medida g/ml/kg/l) -->
+                <select
+                  v-model="ing.unit"
+                  class="px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm"
+                  @change="calcTotalCost()"
+                >
+                  <option value="package">{{ getPurchaseUnit(ing) }}</option>
+                  <option value="base">{{ getBaseUnit(ing) }}</option>
+                </select>
 
                 <!-- Custo do item -->
                 <span class="w-20 text-xs text-brand-text-muted text-right">
@@ -379,7 +391,7 @@ async function loadIngredients() {
   }
 }
 
-function openRecipeModal(recipe = null) {
+async function openRecipeModal(recipe = null) {
   editingRecipe.value = recipe
   if (recipe) {
     form.value = {
@@ -392,6 +404,20 @@ function openRecipeModal(recipe = null) {
       totalCost: recipe.totalCost,
       notes: recipe.notes || '',
       recipeIngredients: [],
+    }
+    // Carregar ingredientes vinculados à receita ao abrir edição
+    try {
+      const items = await recipeIngredientsService.listByRecipe(recipe.id)
+      form.value.recipeIngredients = items.map((item) => ({
+        id: item.id,
+        ingredientId: item.ingredientId,
+        quantityUsed: item.quantityUsed,
+        unit: 'base',
+        costContribution: 0,
+      }))
+      calcTotalCost()
+    } catch (err) {
+      console.warn('[RecipesManager] Não foi possível carregar ingredientes da receita.', err.message)
     }
   } else {
     form.value = {
@@ -414,6 +440,13 @@ function closeRecipeModal() {
   editingRecipe.value = null
 }
 
+function onIngredientChange(ing) {
+  ing.quantityUsed = 0
+  ing.unit = 'base'
+  ing.costContribution = 0
+  calcTotalCost()
+}
+
 function addIngredientRow() {
   if (availableIngredients.value.length === 0) {
     toastWarning("Cadastre ao menos um insumo no estoque antes de adicionar à receita.", { duration: 4000 })
@@ -423,6 +456,7 @@ function addIngredientRow() {
   form.value.recipeIngredients.push({
     ingredientId: '',
     quantityUsed: 0,
+    unit: 'base',
     costContribution: 0,
   })
 }
@@ -432,21 +466,59 @@ function removeIngredientRow(idx) {
   calcTotalCost()
 }
 
+function round2(v) {
+  return Math.round(v * 100) / 100
+}
+
+function getIngredient(ing) {
+  return availableIngredients.value.find((i) => i.id === ing.ingredientId) || null
+}
+
+function getPurchaseUnit(ing) {
+  const ingredient = getIngredient(ing)
+  return ingredient ? (ingredient.purchaseUnit || 'un') : 'un'
+}
+
+function getBaseUnit(ing) {
+  const ingredient = getIngredient(ing)
+  return ingredient ? (ingredient.baseUnit || 'g') : 'g'
+}
+
+// Custo por unidade selecionada (embalagem/cx ou medida g/ml/kg/l)
+function getUnitCost(ing) {
+  const ingredient = getIngredient(ing)
+  if (!ingredient) return 0
+  if (ing.unit === 'package') {
+    // custo da embalagem inteira (cx / un / pct)
+    return Number(ingredient.lastUnitCost) || 0
+  }
+  // unidade de medida base: custo por g/ml (kg -> 1000g, l -> 1000ml)
+  let cost = Number(ingredient.costPerBaseUnit) || 0
+  if (ingredient.baseUnit === 'kg') cost = cost / 1000
+  if (ingredient.baseUnit === 'l') cost = cost / 1000
+  return cost
+}
+
+function calcLineCost(ing) {
+  const ingredient = getIngredient(ing)
+  if (!ingredient || !ing.ingredientId) {
+    ing.costContribution = 0
+    return 0
+  }
+  const newContribution = round2(Number(ing.quantityUsed || 0) * getUnitCost(ing))
+  if (ing.costContribution !== newContribution) ing.costContribution = newContribution
+  return ing.costContribution
+}
+
 function calcTotalCost() {
   let total = 0
   form.value.recipeIngredients.forEach((ing) => {
-    const ingredient = availableIngredients.value.find((i) => i.id === ing.ingredientId)
-    if (ingredient) {
-      ing.costContribution = ing.quantityUsed * ingredient.costPerBaseUnit
-      total += ing.costContribution
-    } else {
-      ing.costContribution = 0
-    }
+    total += calcLineCost(ing)
   })
 
-  const overhead = (total * form.value.overheadPercent) / 100
-  const labor = form.value.laborCost || 0
-  form.value.totalCost = total + overhead + labor
+  const overhead = (total * Number(form.value.overheadPercent || 0)) / 100
+  const labor = Number(form.value.laborCost || 0)
+  form.value.totalCost = round2(total + overhead + labor)
 }
 
 async function saveRecipe() {
