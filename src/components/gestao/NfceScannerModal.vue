@@ -42,6 +42,50 @@
         </button>
       </div>
 
+      <!-- Card de detecção via QR Code (câmera) -->
+      <div
+        v-if="showDetectionCard"
+        class="mt-6 bg-amber-50 border border-amber-100 rounded-2xl p-4 shadow-sm"
+      >
+        <h4 class="font-medium text-amber-800 mb-3 flex items-center gap-2">
+          <AlertTriangle class="w-4 h-4 text-amber-600" />
+          QR Code da nota detectado
+        </h4>
+
+        <div v-if="detectedAccessKey" class="mb-3">
+          <span class="text-xs text-brand-text-muted block mb-1">Chave de acesso (44 dígitos)</span>
+          <div class="flex gap-2">
+            <span class="flex-1 bg-white px-3 py-2 rounded border border-gray-200 text-xs font-mono text-brand-text-primary break-all">
+              {{ detectedAccessKey }}
+            </span>
+            <button
+              @click="copyAccessKey"
+              class="px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold rounded transition-colors"
+            >
+              Copiar Chave
+            </button>
+          </div>
+        </div>
+
+        <a
+          :href="detectedUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="w-full btn-primary py-3 text-sm font-medium flex items-center justify-center gap-2 mb-3"
+        >
+          <ExternalLink class="w-4 h-4" />
+          Abrir Nota no site da SEFAZ
+        </a>
+
+        <button
+          @click="showPasteMode = true"
+          class="w-full py-3 text-sm font-medium text-brand-primary underline hover:text-brand-accent bg-brand-bg/50 rounded-lg border border-gray-200"
+        >
+          <Clipboard class="w-4 h-4 mr-1" />
+          Colar texto da nota para conciliar itens
+        </button>
+      </div>
+
       <!-- Câmera / QR Code (v-show para manter o elemento no DOM) -->
       <div v-show="cameraModeActive" class="mt-6">
         <div class="flex items-center justify-between mb-3">
@@ -172,7 +216,8 @@ import { ref, onMounted, onUnmounted, nextTick } from "vue"
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode"
 import { parseNfceCopiedText } from "@/utils/parseNfceText"
 import { invoicesService } from "@/services/invoices"
-import { X, Camera, Clipboard, Layout } from "lucide-vue-next"
+import { X, Camera, Clipboard, Layout, AlertTriangle, ExternalLink } from "lucide-vue-next"
+import { useToast } from "@/composables/useToast"
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -191,6 +236,11 @@ const importedInvoices = ref([])
 
 const cameraModeActive = ref(false)
 const showPasteMode = ref(false)
+const showDetectionCard = ref(false)
+const detectedUrl = ref("")
+const detectedAccessKey = ref("")
+
+const { success: toastSuccess, error: toastError } = useToast()
 
 // Controle de estado real do scanner para evitar "Cannot stop, scanner is not running or paused."
 let isScannerRunning = false
@@ -343,11 +393,25 @@ function stopAndClearScanner() {
 function onScanSuccess(decodedText) {
   if (!scanning.value) return
   stopScanner()
-  processNfceApi(decodedText)
+
+  const input = decodedText.trim()
+  const digitsOnly = input.replace(/\D/g, "")
+  const accessKeyMatch = digitsOnly.match(/\d{44}/)
+  detectedAccessKey.value = accessKeyMatch ? accessKeyMatch[0] : ""
+  detectedUrl.value = input
+
+  toastSuccess("QR Code da nota detectado!", { duration: 3000 })
+  showDetectionCard.value = true
+  showPasteMode.value = true
 }
 
-function onScanFailure(error) {
-  // Ignore scan errors during continuous scanning
+function copyAccessKey() {
+  if (!detectedAccessKey.value) return
+  navigator.clipboard.writeText(detectedAccessKey.value).then(() => {
+    toastSuccess("Chave copiada para a área de transferência", { duration: 3000 })
+  }).catch(() => {
+    toastError("Não foi possível copiar a chave.")
+  })
 }
 
 async function processPasteInput() {

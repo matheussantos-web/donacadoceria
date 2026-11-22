@@ -303,6 +303,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { recipesService, recipeIngredientsService } from '@/services/recipes'
 import { ingredientsService } from '@/services/ingredients'
 import { Plus, X } from 'lucide-vue-next'
+import { useToast } from '@/composables/useToast'
 
 const props = defineProps({})
 const emit = defineEmits([])
@@ -317,6 +318,8 @@ const error = ref('')
 const showRecipeModal = ref(false)
 const editingRecipe = ref(null)
 const savingRecipe = ref(false)
+
+const { warning: toastWarning } = useToast()
 
 const form = ref({
   name: '',
@@ -410,6 +413,10 @@ function closeRecipeModal() {
 }
 
 function addIngredientRow() {
+  if (availableIngredients.value.length === 0) {
+    toastWarning("Cadastre ao menos um insumo no estoque antes de adicionar à receita.", { duration: 4000 })
+    return
+  }
   form.recipeIngredients.push({
     ingredientId: '',
     quantityUsed: 0,

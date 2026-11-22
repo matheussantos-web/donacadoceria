@@ -57,18 +57,17 @@
 
     <div class="relative z-10 max-w-screen-xl mx-auto px-4 pb-12">
       <div class="mb-8">
-        <div class="w-full overflow-x-auto no-scrollbar pb-2">
-          <div class="bg-white/80 backdrop-blur-md border border-rose-200/60 rounded-2xl p-1.5 shadow-sm shrink-0">
-            <div class="flex gap-0.5">
+        <div class="w-full overflow-x-auto pb-2 scrollbar-hide shrink-0">
+          <div class="flex items-center gap-2 py-1 shrink-0 min-w-full sm:min-w-0">
             <button
               v-for="module in modules"
               :key="module.key"
               @click="activeModule = module.key"
-              class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 shrink-0 whitespace-nowrap min-w-[120px] sm:min-w-auto"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-full border shrink-0 transition-all duration-300 whitespace-nowrap min-w-[120px] sm:min-w-auto"
               :class="
                 activeModule === module.key
-                  ? 'bg-brand-primary text-white shadow-md shadow-rose-900/20'
-                  : 'text-brand-text-muted hover:bg-gray-100 hover:text-brand-text-primary'
+                  ? 'bg-brand-primary text-white border-brand-primary shadow-md shadow-rose-900/20'
+                  : 'border-transparent text-brand-text-muted hover:bg-gray-100 hover:text-brand-text-primary'
               "
             >
               <component :is="moduleIcons[module.key]" class="w-4 h-4" />
@@ -88,7 +87,6 @@
               </span>
             </button>
           </div>
-        </div>
         </div>
       </div>
 
@@ -540,3 +538,13 @@ const logout = async () => {
   window.location.href = "/login"
 }
 </script>
+
+<style>
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+</style>
