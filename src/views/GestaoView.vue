@@ -63,6 +63,21 @@
               {{ formatPrice(monthEntries) }} entra · {{ formatPrice(monthExits) }} sai
             </p>
           </div>
+          <div v-if="productsNeedingPriceReview.length > 0" class="bg-amber-50 border border-amber-100 rounded-xl p-6">
+            <p class="text-xs text-brand-text-muted uppercase tracking-wider mb-1">Revisão de preço</p>
+            <p class="font-display font-medium text-2xl text-amber-700">
+              {{ productsNeedingPriceReview.length }} produto(s)
+            </p>
+            <p class="text-xs text-amber-800 mt-1">
+              precisam de revisão de preço
+            </p>
+            <button
+              @click="activeModule = 'precificacao'"
+              class="mt-2 text-xs text-brand-primary underline hover:text-brand-accent"
+            >
+              Ir para Precificação
+            </button>
+          </div>
         </div>
       </div>
 
@@ -199,6 +214,20 @@ const monthExits = computed(() =>
 )
 
 const monthBalance = computed(() => monthEntries.value - monthExits.value)
+
+// Produtos com margem defasada (preço abaixo do sugerido ou margem >3pp abaixo do alvo)
+const productsNeedingPriceReview = computed(() =>
+  pricedProducts.value.filter((p) => {
+    const suggested = Number(p.suggestedPrice) || 0
+    const finalPrice = Number(p.finalPrice) || 0
+    const targetMargin = Number(p.targetMarginPercent) || 0
+    const cost = Number(p.totalProductionCost) || 0
+    if (!suggested || !finalPrice || !targetMargin) return false
+    const realMargin = ((finalPrice - cost) / finalPrice) * 100
+    const marginGap = targetMargin - realMargin
+    return finalPrice < suggested || marginGap > 3
+  })
+)
 
 const logoImgRef = logoImg
 

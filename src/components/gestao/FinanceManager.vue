@@ -24,6 +24,20 @@
         </svg>
         Novo Lançamento
       </button>
+      <button
+        @click="syncPreviousInvoices"
+        class="px-4 py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded border border-gray-200"
+      >
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          ></path>
+        </svg>
+        Sincronizar notas anteriores
+      </button>
     </div>
 
     <!-- Cards de resumo -->
@@ -292,6 +306,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { financeService } from '@/services/finance'
+import { invoicesService } from '@/services/invoices'
 
 const props = defineProps({})
 const emit = defineEmits([])
@@ -421,6 +436,39 @@ async function loadTransactions() {
 function resetFilters() {
   periodFilter.value = 'mes_atual'
   typeFilter.value = 'todas'
+}
+
+async function syncPreviousInvoices() {
+  try {
+    const invoices = await invoicesService.list()
+    const existingTx = transactions.value.filter(
+      (t) => t.referenceType === 'invoice'
+    )
+    const existingInvoiceIds = new Set(existingTx.map((t) => t.referenceId))
+
+    let synced = 0
+    for (const inv of invoices || []) {
+      if (existingInvoiceIds.has(inv.id)) continue
+      const totalAmount = Number(inv.totalAmount) || 0
+      if (totalAmount <= 0) continue
+      await financeService.upsertByReference('invoice', inv.id, {
+        type: 'saida',
+        category: 'Insumos / Mercado',
+        description: `Compra NFC-e - ${inv.storeName}`,
+        amount: totalAmount,
+        transactionDate: inv.issueDate ? inv.issueDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        paymentMethod: 'Pix',
+        referenceType: 'invoice',
+        referenceId: inv.id,
+      })
+      synced++
+    }
+
+    await loadTransactions()
+    alert(synced > 0 ? `${synced} nota(s) fiscal(ais) sincronizada(s) ao financeiro.` : 'Todas as notas já estavam sincronizadas.')
+  } catch (err) {
+    alert(err.message || 'Erro ao sincronizar notas fiscais.')
+  }
 }
 
 function openTransactionModal(tx = null) {

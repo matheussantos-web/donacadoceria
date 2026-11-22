@@ -71,6 +71,17 @@
               </span>
             </div>
           </div>
+          <div v-if="productMarginNeedsReview(product)" class="mb-3">
+            <div class="flex items-center gap-1 px-2 py-1 rounded bg-amber-50 border border-amber-100 text-amber-800 text-xs font-medium mb-1">
+              ⚠️ Margem abaixo do alvo — reajustar preço
+            </div>
+            <button
+              @click="applySuggestedPrice(product)"
+              class="w-full btn-primary py-1.5 text-xs font-medium"
+            >
+              Aplicar preço sugerido (R$ {{ formatPrice(product.suggestedPrice) }})
+            </button>
+          </div>
           <div class="mt-auto pt-3 border-t border-gray-100 flex gap-2">
             <button
               @click="openProductModal(product)"
@@ -525,6 +536,42 @@ async function deleteProduct(id) {
     await loadProducts()
   } catch (err) {
     alert(err.message || 'Erro ao excluir produto.')
+  }
+}
+
+function productMarginNeedsReview(product) {
+  const suggested = Number(product.suggestedPrice) || 0
+  const finalPrice = Number(product.finalPrice) || 0
+  const targetMargin = Number(product.targetMarginPercent) || 0
+  const cost = Number(product.totalProductionCost) || 0
+
+  if (!suggested || !finalPrice || !targetMargin) return false
+
+  const realMargin = ((finalPrice - cost) / finalPrice) * 100
+  const marginGap = targetMargin - realMargin
+
+  // Alerta se: preço final abaixo do sugerido OU margem real mais de 3pp abaixo do alvo
+  return finalPrice < suggested || marginGap > 3
+}
+
+async function applySuggestedPrice(product) {
+  const suggested = Number(product.suggestedPrice) || 0
+  if (!suggested || suggested <= 0) return
+
+  try {
+    await pricedProductsService.update(product.id, {
+      name: product.name,
+      productType: product.productType,
+      yieldSlices: product.yieldSlices,
+      totalProductionCost: product.totalProductionCost,
+      targetMarginPercent: product.targetMarginPercent,
+      finalPrice: suggested,
+      publishedToCatalog: product.publishedToCatalog,
+    })
+    await loadProducts()
+    alert('Preço atualizado para o valor sugerido!')
+  } catch (err) {
+    alert(err.message || 'Erro ao atualizar preço.')
   }
 }
 </script>

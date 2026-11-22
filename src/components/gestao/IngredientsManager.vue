@@ -151,6 +151,12 @@
               Editar
             </button>
             <button
+              @click="openStockExtract(item)"
+              class="flex-1 btn-secondary py-1.5 text-xs font-medium text-brand-primary hover:bg-brand-primary/10"
+            >
+              Extrato
+            </button>
+            <button
               @click="deleteIngredient(item.id)"
               class="px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 rounded"
             >
@@ -399,11 +405,167 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal de Extrato e Ajuste Manual de Estoque -->
+  <div
+    v-if="showStockExtractModal"
+    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto bg-black/60 backdrop-blur-sm"
+    @click.self="closeStockExtractModal"
+  >
+    <div
+      class="w-full max-w-md max-h-[92dvh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden bg-brand-surface border border-gray-100"
+      @click.stop
+    >
+      <!-- Cabeçalho fixo -->
+      <div class="shrink-0 border-b p-4 sm:p-6 border-gray-100 flex items-center justify-between bg-brand-surface">
+        <div>
+          <h3 class="font-display font-medium text-lg text-brand-text-primary">
+            Extrato de Estoque
+          </h3>
+          <p class="text-xs text-brand-text-muted mt-1">
+            {{ extractIngredient?.name }}
+          </p>
+        </div>
+        <button
+          @click="closeStockExtractModal"
+          class="p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
+          aria-label="Fechar"
+        >
+          <span class="text-2xl">✕</span>
+        </button>
+      </div>
+
+      <!-- Corpo rolável -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-brand-surface">
+        <!-- Saldo atual -->
+        <div class="bg-brand-bg border border-gray-100 rounded-xl p-4 mb-4">
+          <p class="text-xs font-medium text-brand-text-muted uppercase tracking-wider mb-2">
+            Saldo atual
+          </p>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-brand-text-muted text-xs">Embalagens fechadas</p>
+              <p class="font-medium text-brand-text-primary text-lg">
+                {{ formatNumber(extractIngredient?.stockPackages || 0) }}
+                {{ purchaseUnitLabels[extractIngredient?.purchaseUnit] || extractIngredient?.purchaseUnit }}
+              </p>
+            </div>
+            <div>
+              <p class="text-brand-text-muted text-xs">Total em {{ extractIngredient?.baseUnit }}</p>
+              <p class="font-medium text-brand-text-primary text-lg">
+                {{ formatNumber(extractIngredient?.stockQuantity || 0) }}
+                {{ extractIngredient?.baseUnit }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Movimentações -->
+        <div class="mb-4">
+          <p class="text-xs font-medium text-brand-text-muted uppercase tracking-wider mb-3">
+            Movimentações
+          </p>
+          <div v-if="extractMovements.length === 0" class="text-center py-4 text-brand-text-muted text-sm">
+            Nenhuma movimentação registrada.
+          </div>
+          <div v-else class="space-y-2">
+            <div
+              v-for="mov in extractMovements"
+              :key="mov.id"
+              class="flex items-center justify-between p-2 bg-brand-bg/50 rounded border border-gray-100"
+            >
+              <div class="flex items-center gap-2 flex-1">
+                <span
+                  class="px-1.5 py-0.5 rounded text-[10px] font-bold"
+                  :class="
+                    mov.movementType === 'entrada'
+                      ? 'bg-green-50 text-green-700'
+                      : 'bg-red-50 text-red-700'
+                  "
+                >
+                  {{ mov.movementType === 'entrada' ? '+ Entrada' : '- Saída' }}
+                </span>
+                <span class="text-sm text-brand-text-primary">{{ formatNumber(mov.quantity) }}</span>
+              </div>
+              <div class="flex flex-col sm:flex-row gap-2 text-xs text-brand-text-muted">
+                <span>{{ mov.reason }}</span>
+                <span>{{ new Date(mov.createdAt).toLocaleString('pt-BR') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ajuste manual -->
+        <div class="bg-brand-primary/5 border border-brand-primary/20 rounded-xl p-4">
+          <p class="text-xs font-medium text-brand-text-muted uppercase tracking-wider mb-3">
+            Ajuste manual de estoque
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-brand-text-muted mb-1">
+                Tipo
+              </label>
+              <select
+                v-model="adjustmentForm.movementType"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm"
+              >
+                <option value="entrada">Entrada</option>
+                <option value="saida">Saída</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-brand-text-muted mb-1">
+                Quantidade ({{ extractIngredient?.baseUnit }})
+              </label>
+              <input
+                v-model.number="adjustmentForm.quantity"
+                type="number"
+                step="0.01"
+                min="0.01"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-brand-text-muted mb-1">
+                Motivo
+              </label>
+              <input
+                v-model="adjustmentForm.reason"
+                type="text"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none text-sm"
+              />
+            </div>
+          </div>
+          <div class="mt-3 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              @click="saveStockAdjustment"
+              :disabled="savingAdjustment || !adjustmentForm.quantity"
+              class="btn-primary px-4 py-2 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {{ savingAdjustment ? 'Ajustando...' : 'Aplicar ajuste' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodapé fixo -->
+      <div class="shrink-0 border-t p-4 sm:p-6 border-gray-100 bg-brand-surface flex items-center justify-end">
+        <button
+          @click="closeStockExtractModal"
+          class="px-4 py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded"
+        >
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { ingredientsService } from '@/services/ingredients'
+import { stockMovementsService } from '@/services/stockMovements'
 
 const props = defineProps({})
 const emit = defineEmits([])
@@ -428,6 +590,17 @@ const form = ref({
   stockQuantity: 0,
   stockPackages: 0,
   minStockAlert: 0,
+})
+
+// Modal de extrato / ajuste manual de estoque
+const showStockExtractModal = ref(false)
+const extractIngredient = ref(null)
+const extractMovements = ref([])
+const savingAdjustment = ref(false)
+const adjustmentForm = ref({
+  movementType: 'entrada',
+  quantity: 0,
+  reason: 'Ajuste manual de estoque',
 })
 
 // Search / filter
@@ -581,6 +754,60 @@ async function deleteIngredient(id) {
     await loadIngredients()
   } catch (err) {
     alert(err.message || 'Erro ao excluir insumo.')
+  }
+}
+
+async function openStockExtract(item) {
+  extractIngredient.value = item
+  adjustmentForm.value = { movementType: 'entrada', quantity: 0, reason: 'Ajuste manual de estoque' }
+  try {
+    extractMovements.value = await stockMovementsService.listByIngredient(item.id)
+  } catch (err) {
+    console.warn('[IngredientsManager] Não foi carregar extrato.', err.message)
+    extractMovements.value = []
+  }
+  showStockExtractModal.value = true
+}
+
+function closeStockExtractModal() {
+  showStockExtractModal.value = false
+  extractIngredient.value = null
+  extractMovements.value = []
+}
+
+async function saveStockAdjustment() {
+  if (!extractIngredient.value) return
+  if (!adjustmentForm.quantity || adjustmentForm.quantity <= 0) return
+
+  savingAdjustment.value = true
+  try {
+    await stockMovementsService.createManualAdjustment({
+      ingredientId: extractIngredient.value.id,
+      movementType: adjustmentForm.movementType,
+      quantity: adjustmentForm.quantity,
+      reason: adjustmentForm.reason || 'Ajuste manual de estoque',
+    })
+
+    // Atualiza o saldo local do insumo na lista
+    const idx = ingredients.value.findIndex((i) => i.id === extractIngredient.value.id)
+    if (idx !== -1) {
+      const current = Number(ingredients.value[idx].stockQuantity) || 0
+      const change = adjustmentForm.movementType === 'entrada'
+        ? Number(adjustmentForm.quantity)
+        : -Number(adjustmentForm.quantity)
+      ingredients.value[idx].stockQuantity = Math.max(0, current + change)
+      ingredients.value[idx].stockPackages =
+        ingredients.value[idx].packageSize > 0
+          ? Math.max(0, Number((ingredients.value[idx].stockQuantity / ingredients.value[idx].packageSize).toFixed(2)))
+          : 0
+    }
+
+    closeStockExtractModal()
+    await loadIngredients()
+  } catch (err) {
+    alert(err.message || 'Erro ao ajustar estoque.')
+  } finally {
+    savingAdjustment.value = false
   }
 }
 </script>
