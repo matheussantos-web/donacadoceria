@@ -389,7 +389,7 @@ const form = ref({
 })
 
 watch(
-  () => form.targetMarginPercent,
+  [productTotalCost, () => form.value.targetMarginPercent],
   () => {
     calcSuggestedPrice()
   }
@@ -401,18 +401,18 @@ const productTotalCost = computed(() => {
 
 const suggestedPrice = computed(() => {
   const cost = productTotalCost.value
-  const margin = form.targetMarginPercent || 0
+  const margin = form.value.targetMarginPercent || 0
   if (margin >= 100) return 0
   return cost / (1 - margin / 100)
 })
 
 const profitPerUnit = computed(() => {
-  return form.finalPrice - productTotalCost.value
+  return form.value.finalPrice - productTotalCost.value
 })
 
 const realMargin = computed(() => {
-  if (form.finalPrice <= 0) return 0
-  return ((form.finalPrice - productTotalCost.value) / form.finalPrice) * 100
+  if (form.value.finalPrice <= 0) return 0
+  return ((form.value.finalPrice - productTotalCost.value) / form.value.finalPrice) * 100
 })
 
 const formatPercent = (num) => Number(num).toFixed(1)
@@ -518,7 +518,11 @@ function addComponentRow() {
 
 function getLineUnitCost(comp) {
   const recipe = availableRecipes.value.find((r) => r.id === comp.recipeId)
-  return recipe ? Number(recipe.unitCost || 0) : 0
+  if (!recipe) return 0
+  const unitCost = Number(recipe.unitCost) > 0
+    ? Number(recipe.unitCost)
+    : (Number(recipe.yieldQuantity) > 0 ? Number(recipe.totalCost || 0) / Number(recipe.yieldQuantity) : Number(recipe.totalCost || 0))
+  return round2(unitCost)
 }
 
 function removeComponent(idx) {
@@ -531,13 +535,16 @@ function calcTotalCost() {
   ;(form.value.components || []).forEach((comp) => {
     const recipe = availableRecipes.value.find((r) => r.id === comp.recipeId)
     if (recipe) {
-      comp.costContribution = round2(Number(comp.multiplierOrQty || 0) * Number(recipe.unitCost || 0))
+      const unitCost = Number(recipe.unitCost) > 0
+        ? Number(recipe.unitCost)
+        : (Number(recipe.yieldQuantity) > 0 ? Number(recipe.totalCost || 0) / Number(recipe.yieldQuantity) : Number(recipe.totalCost || 0))
+      comp.costContribution = round2(Number(comp.multiplierOrQty || 0) * unitCost)
       total += comp.costContribution
     } else {
       comp.costContribution = 0
     }
   })
-  form.totalProductionCost = round2(total)
+  form.value.totalProductionCost = round2(total)
 }
 
 function round2(v) {
@@ -546,12 +553,12 @@ function round2(v) {
 
 function calcSuggestedPrice() {
   const cost = productTotalCost.value
-  const margin = Number(form.targetMarginPercent || 0)
+  const margin = Number(form.value.targetMarginPercent || 0)
   if (margin >= 100) {
-    form.finalPrice = 0
+    form.value.finalPrice = 0
     return
   }
-  form.finalPrice = round2(cost / (1 - margin / 100))
+  form.value.finalPrice = round2(cost / (1 - margin / 100))
 }
 
 function calcMarginFromFinalPrice() {
@@ -559,18 +566,25 @@ function calcMarginFromFinalPrice() {
 }
 
 async function saveProduct() {
-  if (!form.name) return
+  if (!form.value.name) {
+    toastError('Informe o nome do produto antes de salvar.')
+    return
+  }
+  if (!Array.isArray(form.value.components) || form.value.components.length === 0 || !form.value.components.some((c) => c.recipeId)) {
+    toastError('Adicione ao menos um componente (receita/embalagem) ao produto.')
+    return
+  }
 
   savingProduct.value = true
   try {
     const payload = {
-      name: form.name,
-      productType: form.productType,
-      yieldSlices: form.yieldSlices,
+      name: form.value.name,
+      productType: form.value.productType,
+      yieldSlices: form.value.yieldSlices,
       totalProductionCost: productTotalCost.value,
-      targetMarginPercent: form.targetMarginPercent,
-      finalPrice: form.finalPrice,
-      publishedToCatalog: form.publishedToCatalog,
+      targetMarginPercent: form.value.targetMarginPercent,
+      finalPrice: form.value.finalPrice,
+      publishedToCatalog: form.value.publishedToCatalog,
     }
 
     let savedProduct
