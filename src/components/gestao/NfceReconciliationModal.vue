@@ -525,6 +525,19 @@ async function confirmReconciliation() {
           })
           .eq('id', finalIngredientId)
       }
+
+      // Registra movimento de entrada de estoque (não bloqueia se a tabela ainda não existir)
+      try {
+        await supabase.from('stock_movements').insert({
+          ingredient_id: finalIngredientId,
+          movement_type: 'entrada',
+          quantity: quantityBaseUnit,
+          reason: `NFC-e #${props.nfce.accessKey}`,
+          reference_id: createdInvoiceId,
+        })
+      } catch (movErr) {
+        console.warn('[NfceReconciliation] Não foi possível registrar movimento de estoque:', movErr.message)
+      }
     }
 
     // 4. Disparar recálculo em cascata

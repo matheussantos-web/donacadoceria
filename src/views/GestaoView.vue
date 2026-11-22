@@ -48,11 +48,19 @@
             <p class="text-xs text-brand-text-muted uppercase tracking-wider">Produtos Precificados</p>
             <p class="font-display font-medium text-2xl text-brand-text-primary">{{ pricedProducts.length }}</p>
           </div>
+          <div class="bg-brand-surface border border-gray-100 rounded-xl p-6">
+            <p class="text-xs text-brand-text-muted uppercase tracking-wider">Próximas Encomendas</p>
+            <p class="font-display font-medium text-2xl text-brand-text-primary">{{ upcomingOrders.length }}</p>
+            <p class="text-xs text-brand-text-muted mt-1">R$ {{ totalToReceive }} a receber</p>
+          </div>
         </div>
       </div>
 
       <!-- Módulo: Estoque & Insumos -->
       <IngredientsManager v-if="activeModule === 'estoque'" />
+
+      <!-- Módulo: Pedidos & Encomendas -->
+      <OrdersManager v-if="activeModule === 'pedidos'" />
 
       <!-- Módulo: Receitas -->
       <RecipesManager v-if="activeModule === 'receitas'" />
@@ -103,16 +111,19 @@ import RecipesManager from "@/components/gestao/RecipesManager.vue"
 import PricingManager from "@/components/gestao/PricingManager.vue"
 import NfceScannerModal from "@/components/gestao/NfceScannerModal.vue"
 import NfceReconciliationModal from "@/components/gestao/NfceReconciliationModal.vue"
+import OrdersManager from "@/components/gestao/OrdersManager.vue"
 import { parseNfceCopiedText } from "@/utils/parseNfceText"
 import { ingredientsService } from "@/services/ingredients"
 import { recipesService } from "@/services/recipes"
 import { pricedProductsService } from "@/services/recipes"
+import { ordersService } from "@/services/orders"
 import { useAuth } from "@/composables/useAuth"
 
 const { signOut } = useAuth()
 
 const modules = [
   { key: "dashboard", label: "Visão Geral" },
+  { key: "pedidos", label: "Pedidos & Encomendas" },
   { key: "estoque", label: "Estoque & Insumos" },
   { key: "receitas", label: "Receitas" },
   { key: "precificacao", label: "Precificação" },
@@ -128,9 +139,23 @@ const route = useRoute()
 const ingredients = ref([])
 const recipes = ref([])
 const pricedProducts = ref([])
+const orders = ref([])
 
 const lowStockCount = computed(() =>
   ingredients.value.filter((i) => i.stockQuantity <= i.minStockAlert).length
+)
+
+const upcomingOrders = computed(() =>
+  orders.value
+    .filter((o) => o.status !== 'entregue' && o.status !== 'cancelado')
+    .sort((a, b) => new Date(a.deliveryDate) - new Date(b.deliveryDate))
+    .slice(0, 5)
+)
+
+const totalToReceive = computed(() =>
+  orders.value
+    .filter((o) => o.status !== 'entregue' && o.status !== 'cancelado')
+    .reduce((sum, o) => sum + Math.max(0, o.totalAmount - o.depositPaid), 0)
 )
 
 const logoImgRef = logoImg
@@ -209,14 +234,16 @@ async function handleSharedContent() {
 
 async function loadData() {
   try {
-    const [ings, recs, prods] = await Promise.all([
+    const [ings, recs, prods, ords] = await Promise.all([
       ingredientsService.list(),
       recipesService.list(),
       pricedProductsService.list(),
+      ordersService.list(),
     ])
     ingredients.value = ings
     recipes.value = recs
     pricedProducts.value = prods
+    orders.value = ords
   } catch (err) {
     console.error("[GestaoView] Erro ao carregar dados.", err.message)
   }

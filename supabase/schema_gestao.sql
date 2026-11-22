@@ -268,3 +268,102 @@ comment on table public.recipes is 'Receitas / preparos base.';
 comment on table public.recipe_ingredients is 'Ingredientes utilizados em cada receita.';
 comment on table public.priced_products is 'Produtos finais com precificação.';
 comment on table public.priced_product_components is 'Receitas/itens que compõem cada produto final.';
+
+-- ---------------------------------------------------------------------------
+-- orders — Pedidos / Encomendas
+-- ---------------------------------------------------------------------------
+create table if not exists public.orders (
+  id uuid primary key default gen_random_uuid(),
+  customer_name text not null,
+  customer_phone text default '',
+  delivery_date timestamptz not null,
+  status text not null default 'pendente'
+    check (status in ('pendente', 'em_producao', 'entregue', 'cancelado')),
+  total_amount numeric(10,2) not null default 0,
+  deposit_paid numeric(10,2) not null default 0,
+  payment_status text not null default 'pendente'
+    check (payment_status in ('pendente', 'sinal_pago', 'pago')),
+  notes text default '',
+  stock_deducted boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------------
+-- order_items — Itens do Pedido
+-- ---------------------------------------------------------------------------
+create table if not exists public.order_items (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders(id) on delete cascade,
+  priced_product_id uuid references public.priced_products(id) on delete set null,
+  product_name text not null,
+  quantity numeric(10,2) not null default 1,
+  unit_price numeric(10,2) not null default 0,
+  subtotal numeric(10,2) not null default 0
+);
+
+-- ---------------------------------------------------------------------------
+-- stock_movements — Movimentações de Estoque
+-- ---------------------------------------------------------------------------
+create table if not exists public.stock_movements (
+  id uuid primary key default gen_random_uuid(),
+  ingredient_id uuid not null references public.ingredients(id) on delete cascade,
+  movement_type text not null check (movement_type in ('entrada', 'saida')),
+  quantity numeric(10,2) not null,
+  reason text not null,
+  reference_id uuid nullable,
+  created_at timestamptz not null default now()
+);
+
+-- Índices
+create index if not exists idx_orders_status on public.orders(status);
+create index if not exists idx_orders_delivery_date on public.orders(delivery_date);
+create index if not exists idx_order_items_order on public.order_items(order_id);
+create index if not exists idx_stock_movements_ingredient on public.stock_movements(ingredient_id);
+create index if not exists idx_stock_movements_created_on on public.stock_movements(created_at);
+
+-- Updated at triggers for orders
+drop trigger if exists update_orders_updated_at on public.orders;
+create trigger update_orders_updated_at
+  before update on public.orders
+  for each row
+  execute function public.update_updated_at_column();
+
+-- RLS
+alter table public.orders enable row level security;
+alter table public.order_items enable row level security;
+alter table public.stock_movements enable row level security;
+
+do $$ begin
+  drop policy if exists "Authenticated read orders" on public.orders;
+  create policy "Authenticated read orders" on public.orders for select using (auth.uid() is not null);
+exception when others then end $$;
+
+do $$ begin
+  drop policy if exists "Authenticated write orders" on public.orders;
+  create policy "Authenticated write orders" on public.orders for all using (auth.uid() is not null);
+exception when others then end $$;
+
+do $$ begin
+  drop policy if exists "Authenticated read order_items" on public.order_items;
+  create policy "Authenticated read order_items" on public.order_items for select using (auth.uid() is not null);
+exception when others then end $$;
+
+do $$ begin
+  drop policy if exists "Authenticated write order_items" on public.order_items;
+  create policy "Authenticated write order_items" on public.order_items for all using (auth.uid() is not null);
+exception when others then end $$;
+
+do $$ begin
+  drop policy if exists "Authenticated read stock_movements" on public.stock_movements;
+  create policy "Authenticated read stock_movements" on public.stock_movements for select using (auth.uid() is not null);
+exception when others then end $$;
+
+do $$ begin
+  drop policy if exists "Authenticated write stock_movements" on public.stock_movements;
+  create policy "Authenticated write stock_movements" on public.stock_movements for all using (auth.uid() is not null);
+exception when others then end $$;
+
+comment on table public.orders is 'Pedidos / Encomendas de clientes.';
+comment on table public.order_items is 'Itens de cada pedido.';
+comment on table public.stock_movements is 'Movimentações de estoque de insumos (entrada via NFC-e, saída via pedidos).';
