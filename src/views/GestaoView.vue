@@ -330,16 +330,6 @@ import { useAuth } from "@/composables/useAuth"
 const { signOut } = useAuth()
 const { toast, toasts, success, error, warning, info, dismiss: dismissToast } = useToast()
 
-const modules = [
-  { key: "dashboard", label: "Visão Geral", icon: "📊", badge: null, badgeColor: null },
-  { key: "pedidos", label: "Pedidos", icon: "🍽️", badge: upcomingOrders.value.length > 0 ? upcomingOrders.value.length : null, badgeColor: "alert" },
-  { key: "financeiro", label: "Financeiro", icon: "💰", badge: null, badgeColor: null },
-  { key: "estoque", label: "Estoque", icon: "📦", badge: lowStockCount > 0 ? lowStockCount : null, badgeColor: "alert" },
-  { key: "receitas", label: "Receitas", icon: "📖", badge: recipes.value.length, badgeColor: null },
-  { key: "precificacao", label: "Precificação", icon: "🏷️", badge: productsNeedingPriceReview.value.length > 0 ? productsNeedingPriceReview.value.length : null, badgeColor: "warn" },
-  { key: "nfce", label: "NFC-e", icon: "🧾", badge: null, badgeColor: null },
-]
-
 const activeModule = ref("dashboard")
 const showScanner = ref(false)
 const showReconciliation = ref(false)
@@ -415,6 +405,16 @@ const productsNeedingPriceReview = computed(() =>
     return finalPrice < suggested || marginGap > 3
   })
 )
+
+const modules = [
+  { key: "dashboard", label: "Visão Geral", icon: "📊", badge: null, badgeColor: null },
+  { key: "pedidos", label: "Pedidos", icon: "🍽️", badge: upcomingOrders.value.length > 0 ? upcomingOrders.value.length : null, badgeColor: "alert" },
+  { key: "financeiro", label: "Financeiro", icon: "💰", badge: null, badgeColor: null },
+  { key: "estoque", label: "Estoque", icon: "📦", badge: lowStockCount > 0 ? lowStockCount : null, badgeColor: "alert" },
+  { key: "receitas", label: "Receitas", icon: "📖", badge: recipes.value.length, badgeColor: null },
+  { key: "precificacao", label: "Precificação", icon: "🏷️", badge: productsNeedingPriceReview.value.length > 0 ? productsNeedingPriceReview.value.length : null, badgeColor: "warn" },
+  { key: "nfce", label: "NFC-e", icon: "🧾", badge: null, badgeColor: null },
+]
 
 const greeting = computed(() => {
   const h = new Date().getHours()
