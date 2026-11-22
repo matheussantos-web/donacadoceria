@@ -396,7 +396,7 @@ watch(
 )
 
 const productTotalCost = computed(() => {
-  return (form.components || []).reduce((sum, comp) => sum + (comp.costContribution || 0), 0)
+  return (form.value.components || []).reduce((sum, comp) => sum + (comp.costContribution || 0), 0)
 })
 
 const suggestedPrice = computed(() => {
@@ -522,13 +522,13 @@ function getLineUnitCost(comp) {
 }
 
 function removeComponent(idx) {
-  form.components.splice(idx, 1)
+  (form.value.components || []).splice(idx, 1)
   calcTotalCost()
 }
 
 function calcTotalCost() {
   let total = 0
-  form.components.forEach((comp) => {
+  ;(form.value.components || []).forEach((comp) => {
     const recipe = availableRecipes.value.find((r) => r.id === comp.recipeId)
     if (recipe) {
       comp.costContribution = round2(Number(comp.multiplierOrQty || 0) * Number(recipe.unitCost || 0))
@@ -587,7 +587,7 @@ async function saveProduct() {
         await pricedProductComponentsService.remove(comp.id)
       }
       // Create new components
-      for (const comp of form.components) {
+      for (const comp of form.value.components) {
         if (comp.recipeId) {
           await pricedProductComponentsService.create({
             pricedProductId: savedProduct.id,
