@@ -70,6 +70,33 @@
                 {{ product.targetMarginPercent }}%
               </span>
             </div>
+            <!-- Barra segmentada: Custo vs Lucro -->
+            <div class="mt-2">
+              <div class="flex items-center gap-1 mb-1 text-xs">
+                <span class="text-brand-text-muted font-medium">Custo de produção</span>
+                <span class="text-brand-text-muted font-medium">Lucro líquido</span>
+              </div>
+              <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                <div
+                  class="h-full bg-brand-primary transition-all duration-300"
+                  :style="{ width: costPercentage(product) + '%' }"
+                ></div>
+                <div
+                  class="h-full bg-emerald-500 transition-all duration-300"
+                  :style="{ width: profitPercentage(product) + '%' }"
+                ></div>
+              </div>
+              <div class="flex justify-between text-[10px] font-medium mt-1">
+                <span class="text-brand-text-muted">
+                  R$ {{ formatPrice(product.totalProductionCost) }}
+                  ({{ Math.round(costPercentage(product)) }}%)
+                </span>
+                <span class="text-emerald-600">
+                  R$ {{ formatPrice(Math.max(0, product.finalPrice - product.totalProductionCost)) }}
+                  ({{ Math.round(profitPercentage(product)) }}%)
+                </span>
+              </div>
+            </div>
           </div>
           <div v-if="productMarginNeedsReview(product)" class="mb-3">
             <div class="flex items-center gap-1 px-2 py-1 rounded bg-amber-50 border border-amber-100 text-amber-800 text-xs font-medium mb-1">
@@ -393,6 +420,22 @@ const formatPercent = (num) => Number(num).toFixed(1)
 const formatPrice = (price) => {
   if (price == null || Number.isNaN(Number(price))) return 'R$ 0,00'
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(price))
+}
+
+// Percentuais para barra segmentada Custo vs Lucro
+const costPercentage = (product) => {
+  const finalPrice = Number(product.finalPrice) || 0
+  const cost = Number(product.totalProductionCost) || 0
+  if (finalPrice <= 0) return 0
+  return Math.min(100, Math.round((cost / finalPrice) * 100))
+}
+
+const profitPercentage = (product) => {
+  const finalPrice = Number(product.finalPrice) || 0
+  const cost = Number(product.totalProductionCost) || 0
+  if (finalPrice <= 0) return 0
+  const profit = Math.max(0, finalPrice - cost)
+  return Math.min(100, Math.round((profit / finalPrice) * 100))
 }
 
 onMounted(() => {

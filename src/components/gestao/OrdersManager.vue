@@ -132,6 +132,97 @@
           </span>
         </div>
 
+        <!-- Stepper visual de status -->
+        <div class="mt-3">
+          <div class="flex items-center gap-1">
+            <div
+              class="flex-1 h-0.5"
+              :class="
+                order.status === 'pendente'
+                  ? 'bg-gray-200'
+                  : 'bg-brand-primary'
+              "
+            ></div>
+            <div
+              class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border-2"
+              :class="
+                order.status === 'pendente'
+                  ? 'bg-brand-primary border-brand-primary text-white'
+                  : 'bg-white border-gray-300 text-brand-text-muted'
+              "
+            >
+              1
+            </div>
+            <div
+              class="flex-1 h-0.5"
+              :class="
+                order.status === 'em_producao' || order.status === 'entregue'
+                  ? 'bg-brand-primary'
+                  : 'bg-gray-200'
+              "
+            ></div>
+            <div
+              class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border-2"
+              :class="
+                order.status === 'em_producao'
+                  ? 'bg-brand-primary border-brand-primary text-white'
+                  : order.status === 'entregue'
+                  ? 'bg-brand-primary border-brand-primary text-white'
+                  : 'bg-white border-gray-300 text-brand-text-muted'
+              "
+            >
+              2
+            </div>
+            <div
+              class="flex-1 h-0.5"
+              :class="
+                order.status === 'entregue'
+                  ? 'bg-brand-primary'
+                  : 'bg-gray-200'
+              "
+            ></div>
+            <div
+              class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border-2"
+              :class="
+                order.status === 'entregue'
+                  ? 'bg-brand-primary border-brand-primary text-white'
+                  : 'bg-white border-gray-300 text-brand-text-muted'
+              "
+            >
+              3
+            </div>
+          </div>
+          <div class="flex justify-between text-[10px] font-medium mt-1">
+            <span
+              :class="
+                order.status === 'pendente'
+                  ? 'text-brand-primary font-bold'
+                  : 'text-brand-text-muted'
+              "
+            >
+              Pendente
+            </span>
+            <span
+              :class="
+                order.status === 'em_producao'
+                  ? 'text-brand-primary font-bold'
+                  : 'text-brand-text-muted'
+              "
+            >
+              Em Produção
+            </span>
+            <span
+              :class="
+                order.status === 'entregue'
+                  ? 'text-brand-primary font-bold'
+                  : 'text-brand-text-muted'
+              "
+            >
+              Entregue
+            </span>
+          </div>
+        </div>
+
         <div class="mt-auto pt-3 border-t border-gray-100 flex gap-2">
           <button
             @click="openOrderModal(order)"

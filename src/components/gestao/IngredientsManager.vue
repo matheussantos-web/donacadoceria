@@ -143,6 +143,36 @@
               </span>
             </div>
           </div>
+          <!-- Barra de nível de estoque -->
+          <div class="mt-3 mb-2">
+            <div class="flex items-center gap-1 mb-1">
+              <span class="text-[10px] font-medium text-brand-text-muted">Nível de Estoque</span>
+              <span class="text-[10px] font-medium"
+                :class="
+                  item.stockQuantity <= item.minStockAlert
+                    ? 'text-red-600'
+                    : item.stockQuantity <= item.minStockAlert * 1.5
+                    ? 'text-amber-600'
+                    : 'text-brand-primary'
+                "
+              >
+                {{ stockLevelLabel(item) }}
+              </span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2">
+              <div
+                class="h-2 rounded-full transition-all duration-300"
+                :class="
+                  item.stockQuantity <= item.minStockAlert
+                    ? 'bg-red-500 animate-pulse'
+                    : item.stockQuantity <= item.minStockAlert * 1.5
+                    ? 'bg-amber-500'
+                    : 'bg-brand-primary'
+                "
+                :style="{ width: stockPercentage(item) + '%' }"
+              ></div>
+            </div>
+          </div>
           <div class="mt-3 pt-3 border-t border-gray-100 flex gap-2">
             <button
               @click="openIngredientModal(item)"
@@ -628,6 +658,21 @@ const formatPrice = (price) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price)
 
 const formatNumber = (num) => Number(num).toLocaleString('pt-BR')
+
+// Nível de estoque percentual para barra visual
+const stockPercentage = (item) => {
+  if (!item || !item.minStockAlert || item.minStockAlert <= 0) return 100
+  return Math.min(100, Math.round((Number(item.stockQuantity) / Number(item.minStockAlert)) * 100))
+}
+
+const stockLevelLabel = (item) => {
+  if (!item || !item.minStockAlert || item.minStockAlert <= 0) return 'Estoque OK'
+  const qty = Number(item.stockQuantity)
+  const min = Number(item.minStockAlert)
+  if (qty <= min) return 'Crítico'
+  if (qty <= min * 1.5) return 'Atenção'
+  return 'OK'
+}
 
 // Label amigável da unidade de compra
 const purchaseUnitLabels = { cx: 'Caixa', kg: 'Kg', l: 'Litro', un: 'Unidade' }

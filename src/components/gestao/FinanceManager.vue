@@ -72,6 +72,39 @@
       </div>
     </div>
 
+    <!-- Barra comparativa Entradas vs Saídas -->
+    <div class="bg-brand-surface border border-gray-100 rounded-xl p-5 mb-4 shadow-sm">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-xs font-medium text-brand-text-muted uppercase">Entradas vs Saídas do Período</span>
+        <span
+          class="text-xs font-bold"
+          :class="balance >= 0 ? 'text-emerald-600' : 'text-rose-600'"
+        >
+          {{ balance >= 0 ? 'Lucro' : 'Prejuízo' }} de {{ formatPrice(Math.abs(balance)) }}
+        </span>
+      </div>
+      <div class="w-full h-4 bg-gray-100 rounded-full overflow-hidden">
+        <div
+          class="h-full bg-brand-primary transition-all duration-500"
+          :style="{ width: entriesPercentage + '%' }"
+          :title="`Entradas: ${formatPrice(totalEntries)}`"
+        ></div>
+        <div
+          class="h-full bg-rose-500 transition-all duration-500"
+          :style="{ width: exitsPercentage + '%' }"
+          :title="`Saídas: ${formatPrice(totalExits)}`"
+        ></div>
+      </div>
+      <div class="flex justify-between text-[10px] font-medium mt-2">
+        <span class="text-brand-text-muted">
+          Entradas: {{ formatPrice(totalEntries) }} ({{ Math.round(entriesPercentage) }}%)
+        </span>
+        <span class="text-rose-600">
+          Saídas: {{ formatPrice(totalExits) }} ({{ Math.round(exitsPercentage) }}%)
+        </span>
+      </div>
+    </div>
+
     <!-- Filtros -->
     <div class="flex flex-wrap items-center gap-3 mb-1">
       <button
@@ -407,6 +440,19 @@ const totalExits = computed(() =>
 )
 
 const balance = computed(() => totalEntries.value - totalExits.value)
+
+// Percentuais para barra comparativa Entradas vs Saídas
+const entriesPercentage = computed(() => {
+  const total = totalEntries.value + totalExits.value
+  if (total <= 0) return 50
+  return Math.round((totalEntries.value / total) * 100)
+})
+
+const exitsPercentage = computed(() => {
+  const total = totalEntries.value + totalExits.value
+  if (total <= 0) return 50
+  return Math.round((totalExits.value / total) * 100)
+})
 
 // Modal state
 const showTransactionModal = ref(false)
