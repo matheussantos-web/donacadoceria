@@ -684,6 +684,13 @@ async function saveOrder() {
 
     closeOrderModal()
     await loadOrders()
+
+    // Sincroniza lançamento financeiro de entrada do pedido (sinal/pagamento)
+    try {
+      await ordersService.syncOrderPayment(savedOrder)
+    } catch (syncErr) {
+      console.warn('[OrdersManager] Não foi possível sincronizar pagamento financeiro:', syncErr.message)
+    }
   } catch (err) {
     alert(err.message || 'Erro ao salvar pedido.')
   } finally {
@@ -747,6 +754,13 @@ async function advanceStatus(order) {
       notes: order.notes,
     }, order.items || [])
     await loadOrders()
+    // Sincroniza lançamento financeiro (pago/sinal/cancelado)
+    try {
+      const updatedOrder = { ...order, status: next }
+      await ordersService.syncOrderPayment(updatedOrder)
+    } catch (syncErr) {
+      console.warn('[OrdersManager] Não foi possível sincronizar pagamento financeiro:', syncErr.message)
+    }
     alert(`Pedido avançado para "${statusLabel(next)}".${stockMsg}`)
   } catch (err) {
     alert(err.message || 'Erro ao atualizar status.')

@@ -215,6 +215,7 @@ import { ingredientsService } from '@/services/ingredients'
 import { invoicesService } from '@/services/invoices'
 import { invoiceItemsService } from '@/services/invoiceItems'
 import { recalculateCostsService } from '@/services/recalculateCosts'
+import { financeService } from '@/services/finance'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -546,6 +547,26 @@ async function confirmReconciliation() {
     // Recarrega a lista de insumos do banco para refletir os novos itens e saldos reais
     await loadIngredients()
     emit('saved')
+
+    // Registra saída financeira automática da compra NFC-e (não bloqueia a importação)
+    try {
+      const totalAmount = Number(props.nfce.totalAmount) || 0
+      if (totalAmount > 0) {
+        await financeService.upsertByReference('invoice', createdInvoiceId, {
+          type: 'saida',
+          category: 'Insumos / Mercado',
+          description: `Compra NFC-e - ${props.nfce.storeName}`,
+          amount: totalAmount,
+          transactionDate: props.nfce.issueDate,
+          paymentMethod: 'Pix',
+          referenceType: 'invoice',
+          referenceId: createdInvoiceId,
+        })
+      }
+    } catch (finErr) {
+      console.warn('[NfceReconciliation] Não foi possível registrar lançamento financeiro:', finErr.message)
+    }
+
     emit('confirmed', { id: createdInvoiceId, access_key: props.nfce.accessKey })
     closeModal()
   } catch (err) {

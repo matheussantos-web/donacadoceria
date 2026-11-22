@@ -31,7 +31,7 @@
       <!-- Módulo: Dashboard -->
       <div v-if="activeModule === 'dashboard'" class="space-y-6">
         <h2 class="font-display font-medium text-2xl text-brand-text-primary">Visão Geral</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div class="bg-brand-surface border border-gray-100 rounded-xl p-6">
             <p class="text-xs text-brand-text-muted uppercase tracking-wider">Total de Insumos</p>
             <p class="font-display font-medium text-2xl text-brand-text-primary">{{ ingredients.length }}</p>
@@ -53,6 +53,16 @@
             <p class="font-display font-medium text-2xl text-brand-text-primary">{{ upcomingOrders.length }}</p>
             <p class="text-xs text-brand-text-muted mt-1">R$ {{ totalToReceive }} a receber</p>
           </div>
+          <div class="bg-brand-surface border border-gray-100 rounded-xl p-6">
+            <p class="text-xs text-brand-text-muted uppercase tracking-wider">Saldo Financeiro (mês)</p>
+            <p class="font-display font-medium text-2xl"
+               :class="monthBalance >= 0 ? 'text-brand-primary' : 'text-red-600'">
+              {{ formatPrice(monthBalance) }}
+            </p>
+            <p class="text-xs text-brand-text-muted mt-1">
+              {{ formatPrice(monthEntries) }} entra · {{ formatPrice(monthExits) }} sai
+            </p>
+          </div>
         </div>
       </div>
 
@@ -61,6 +71,9 @@
 
       <!-- Módulo: Pedidos & Encomendas -->
       <OrdersManager v-if="activeModule === 'pedidos'" />
+
+      <!-- Módulo: Financeiro -->
+      <FinanceManager v-if="activeModule === 'financeiro'" />
 
       <!-- Módulo: Receitas -->
       <RecipesManager v-if="activeModule === 'receitas'" />
@@ -112,11 +125,13 @@ import PricingManager from "@/components/gestao/PricingManager.vue"
 import NfceScannerModal from "@/components/gestao/NfceScannerModal.vue"
 import NfceReconciliationModal from "@/components/gestao/NfceReconciliationModal.vue"
 import OrdersManager from "@/components/gestao/OrdersManager.vue"
+import FinanceManager from "@/components/gestao/FinanceManager.vue"
 import { parseNfceCopiedText } from "@/utils/parseNfceText"
 import { ingredientsService } from "@/services/ingredients"
 import { recipesService } from "@/services/recipes"
 import { pricedProductsService } from "@/services/recipes"
 import { ordersService } from "@/services/orders"
+import { financeService } from "@/services/finance"
 import { useAuth } from "@/composables/useAuth"
 
 const { signOut } = useAuth()
@@ -124,6 +139,7 @@ const { signOut } = useAuth()
 const modules = [
   { key: "dashboard", label: "Visão Geral" },
   { key: "pedidos", label: "Pedidos & Encomendas" },
+  { key: "financeiro", label: "Financeiro" },
   { key: "estoque", label: "Estoque & Insumos" },
   { key: "receitas", label: "Receitas" },
   { key: "precificacao", label: "Precificação" },
@@ -140,6 +156,7 @@ const ingredients = ref([])
 const recipes = ref([])
 const pricedProducts = ref([])
 const orders = ref([])
+const financialTransactions = ref([])
 
 const lowStockCount = computed(() =>
   ingredients.value.filter((i) => i.stockQuantity <= i.minStockAlert).length
@@ -157,6 +174,31 @@ const totalToReceive = computed(() =>
     .filter((o) => o.status !== 'entregue' && o.status !== 'cancelado')
     .reduce((sum, o) => sum + Math.max(0, o.totalAmount - o.depositPaid), 0)
 )
+
+// Resumo financeiro do mês corrente
+const now = new Date()
+const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
+
+const monthTransactions = computed(() =>
+  financialTransactions.value.filter(
+    (t) => t.transactionDate >= currentMonthStart && t.transactionDate <= currentMonthEnd
+  )
+)
+
+const monthEntries = computed(() =>
+  monthTransactions.value
+    .filter((t) => t.type === 'entrada')
+    .reduce((sum, t) => sum + t.amount, 0)
+)
+
+const monthExits = computed(() =>
+  monthTransactions.value
+    .filter((t) => t.type === 'saida')
+    .reduce((sum, t) => sum + t.amount, 0)
+)
+
+const monthBalance = computed(() => monthEntries.value - monthExits.value)
 
 const logoImgRef = logoImg
 
@@ -183,37 +225,7 @@ async function handleSharedContent() {
     window.history.replaceState({}, document.title, route.path)
   }
 
-  // Se é uma URL ou chave de acesso, chama a API
-  const isUrl = String(sharedText).startsWith("http")
-  const isAccessKey = /^\d{44}$/.test(String(sharedText).replace(/\s/g, ""))
-
-  if (isUrl || isAccessKey) {
-    try {
-      const response = await fetch("/api/parse-nfce", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: sharedText }),
-      })
-
-      if (!response.ok) {
-        const errData = await response.json()
-        console.error("[Share] Erro da API:", errData.error)
-        return
-      }
-
-      const data = await response.json()
-      if (data.success && data.items && data.items.length > 0) {
-        pendingNfce.value = data
-        showScanner.value = false
-        showReconciliation.value = true
-      }
-    } catch (err) {
-      console.error("[Share] Erro ao processar conteúdo compartilhado:", err.message)
-    }
-    return
-  }
-
-  // Senão, trata como texto copiado da SEFAZ-RJ
+  // Tenta fazer parse client-side do texto compartilhado (SEFAZ-RJ)
   const result = parseNfceCopiedText(sharedText)
   if (result.success && result.items && result.items.length > 0) {
     pendingNfce.value = {
@@ -229,21 +241,25 @@ async function handleSharedContent() {
     }
     showScanner.value = false
     showReconciliation.value = true
+  } else {
+    alert(result.error || "Não foi possível processar o conteúdo compartilhado. Cole o texto completo da nota fiscal (SEFAZ-RJ).")
   }
 }
 
 async function loadData() {
   try {
-    const [ings, recs, prods, ords] = await Promise.all([
+    const [ings, recs, prods, ords, fin] = await Promise.all([
       ingredientsService.list(),
       recipesService.list(),
       pricedProductsService.list(),
       ordersService.list(),
+      financeService.list(),
     ])
     ingredients.value = ings
     recipes.value = recs
     pricedProducts.value = prods
     orders.value = ords
+    financialTransactions.value = fin
   } catch (err) {
     console.error("[GestaoView] Erro ao carregar dados.", err.message)
   }

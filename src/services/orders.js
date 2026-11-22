@@ -2,6 +2,7 @@
  * Camada de dados - Pedidos, Encomendas e Baixa de Estoque
  */
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { financeService } from './finance'
 
 function toOrder(row) {
   return {
@@ -290,5 +291,54 @@ export const ordersService = {
       .eq('id', orderId)
 
     return { restored: true }
+  },
+
+  /**
+   * Sincroniza o lançamento financeiro de entrada de um pedido.
+   * - Se pagamento completo (pago): lançamento de entrada com total_amount.
+   * - Se sinal pago (sinal_pago / deposit_paid > 0): lançamento com deposit_paid.
+   * - Se cancelado: remove lançamento vinculado.
+   */
+  async syncOrderPayment(order) {
+    if (!isSupabaseConfigured()) throw new Error('Supabase não configurado.')
+
+    const isPaid = order.paymentStatus === 'pago' || order.paymentStatus === 'pago_integral'
+    const hasDeposit = order.depositPaid && Number(order.depositPaid) > 0
+
+    // Cancelado: remove lançamento financeiro vinculado
+    if (order.status === 'cancelado') {
+      await financeService.removeByReference('order', order.id)
+      return { synced: false, reason: 'cancelled' }
+    }
+
+    if (isPaid) {
+      return await financeService.upsertByReference('order', order.id, {
+        type: 'entrada',
+        category: 'Encomendas',
+        description: `Encomenda - ${order.customerName}`,
+        amount: Number(order.totalAmount) || 0,
+        transactionDate: order.deliveryDate ? new Date(order.deliveryDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+        paymentMethod: 'Pix',
+        referenceType: 'order',
+        referenceId: order.id,
+      })
+    }
+
+    if (hasDeposit) {
+      return await financeService.upsertByReference('order', order.id, {
+        type: 'entrada',
+        category: 'Encomendas',
+        description: `Encomenda - ${order.customerName} (sinal)`,
+        amount: Number(order.depositPaid),
+        transactionDate: order.deliveryDate ? new Date(order.deliveryDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+        paymentMethod: 'Pix',
+        referenceType: 'order',
+        referenceId: order.id,
+      })
+    }
+
+    // Sem pagamento: remove lançamento se existir (idempotente - não lança nada)
+    await financeService.removeByReference('order', order.id)
+    return { synced: false, reason: 'no_payment' }
   },
 }

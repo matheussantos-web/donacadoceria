@@ -367,3 +367,50 @@ exception when others then end $$;
 comment on table public.orders is 'Pedidos / Encomendas de clientes.';
 comment on table public.order_items is 'Itens de cada pedido.';
 comment on table public.stock_movements is 'Movimentações de estoque de insumos (entrada via NFC-e, saída via pedidos).';
+
+-- ---------------------------------------------------------------------------
+-- financial_transactions — Lançamentos do Fluxo de Caixa
+-- ---------------------------------------------------------------------------
+create table if not exists public.financial_transactions (
+  id uuid primary key default gen_random_uuid(),
+  type text not null check (type in ('entrada', 'saida')),
+  category text not null,
+  description text not null,
+  amount numeric(10,2) not null,
+  transaction_date date not null default current_date,
+  payment_method text not null default 'Pix'
+    check (payment_method in ('Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Transferência')),
+  reference_type text check (reference_type in ('order', 'invoice', 'manual')),
+  reference_id uuid,
+  created_at timestamptz not null default now()
+);
+
+-- Índice único parcial para evitar lançamentos duplicados da mesma nota/pedido
+create unique index if not exists idx_financial_transactions_ref_unique
+  on public.financial_transactions(reference_type, reference_id)
+  where reference_id is not null;
+
+create index if not exists idx_financial_transactions_date on public.financial_transactions(transaction_date);
+create index if not exists idx_financial_transactions_type on public.financial_transactions(type);
+
+-- Updated at trigger
+drop trigger if exists update_financial_transactions_updated_at on public.financial_transactions;
+create trigger update_financial_transactions_updated_at
+  before update on public.financial_transactions
+  for each row
+  execute function public.update_updated_at_column();
+
+-- RLS
+alter table public.financial_transactions enable row level security;
+
+do $$ begin
+  drop policy if exists "Authenticated read financial_transactions" on public.financial_transactions;
+  create policy "Authenticated read financial_transactions" on public.financial_transactions for select using (auth.uid() is not null);
+exception when others then end $$;
+
+do $$ begin
+  drop policy if exists "Authenticated write financial_transactions" on public.financial_transactions;
+  create policy "Authenticated write financial_transactions" on public.financial_transactions for all using (auth.uid() is not null);
+exception when others then end $$;
+
+comment on table public.financial_transactions is 'Lançamentos do fluxo de caixa (entradas e saídas financeiras).';

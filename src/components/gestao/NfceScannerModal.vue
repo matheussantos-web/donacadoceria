@@ -78,15 +78,15 @@
         </button>
       </div>
 
-      <!-- Colar texto ou link -->
+      <!-- Colar texto da nota fiscal (SEFAZ-RJ) -->
       <div v-if="showPasteMode" class="mt-6 space-y-3">
         <label class="block text-sm font-medium text-brand-text-muted mb-2">
-          Cole o texto da nota fiscal, o link do QR Code ou a chave de acesso (44 dígitos)
+          Cole o texto da nota fiscal (SEFAZ-RJ) ou a chave de acesso (44 dígitos)
         </label>
         <textarea
           v-model="pasteInput"
           rows="5"
-          placeholder="Cole aqui o texto completo da nota fiscal, o link da SEFAZ-RJ ou apenas os 44 dígitos da chave..."
+          placeholder="Cole aqui o texto completo da nota fiscal ou apenas os 44 dígitos da chave de acesso..."
           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
         ></textarea>
         <div class="flex gap-2">
@@ -108,6 +108,31 @@
           >
             Cancelar
           </button>
+        </div>
+      </div>
+
+      <!-- Histórico: últimas notas fiscais importadas -->
+      <div v-if="importedInvoices.length > 0" class="mt-6">
+        <h4 class="font-medium text-brand-text-primary mb-2">Últimas Notas Fiscais Importadas</h4>
+        <div class="space-y-2">
+          <div
+            v-for="inv in importedInvoices"
+            :key="inv.id"
+            class="flex items-center justify-between p-2 bg-brand-bg rounded border border-gray-100 text-sm"
+          >
+            <div>
+              <div class="font-medium text-brand-text-primary">{{ inv.storeName }}</div>
+              <div class="text-xs text-brand-text-muted">
+                {{ inv.issueDate }} · Total {{ formatPrice(inv.totalAmount) }}
+              </div>
+            </div>
+            <button
+              @click="openReconciliation(inv)"
+              class="text-xs text-brand-primary underline hover:text-brand-accent"
+            >
+              Conciliar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -152,6 +177,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from "vue"
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode"
 import { parseNfceCopiedText } from "@/utils/parseNfceText"
+import { invoicesService } from "@/services/invoices"
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -166,6 +192,7 @@ const scanning = ref(false)
 const pasteInput = ref("")
 const scanError = ref(null)
 const parsedNfce = ref(null)
+const importedInvoices = ref([])
 
 const cameraModeActive = ref(false)
 const showPasteMode = ref(false)
@@ -179,7 +206,16 @@ const formatPrice = (price) =>
 
 onMounted(() => {
   initScanner()
+  loadImportedInvoices()
 })
+
+async function loadImportedInvoices() {
+  try {
+    importedInvoices.value = await invoicesService.list()
+  } catch (err) {
+    console.warn('[NfceScanner] Não foi carregar notas fiscais importadas.', err.message)
+  }
+}
 
 onUnmounted(() => {
   stopCameraMode()
@@ -319,10 +355,11 @@ async function processPasteInput() {
   showPasteMode.value = false
 
   const isAccessKey = /^\d{44}$/.test(input.replace(/\s/g, ""))
-  const isUrl = input.startsWith("http")
 
-  if (isAccessKey || isUrl) {
-    await processNfceApi(input)
+  if (isAccessKey) {
+    // Chave de acesso sozinha não tem dados de itens via parse client-side.
+    // O usuário deve colar o texto completo da nota fiscal (SEFAZ-RJ).
+    scanError.value = "Chave de acesso sozinha não contém os itens da nota. Cole o texto completo da nota fiscal (portal SEFAZ-RJ)."
     return
   }
 
@@ -359,38 +396,6 @@ async function pasteFromClipboard() {
   } catch (err) {
     scanError.value = "Não foi possível acessar a área de transferência. Verifique as permissões do navegador."
     console.error(err)
-  }
-}
-
-async function processNfceApi(input) {
-  scanning.value = true
-  scanError.value = null
-  parsedNfce.value = null
-
-  try {
-    const response = await fetch("/api/parse-nfce", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: input }),
-    })
-
-    if (!response.ok) {
-      const errData = await response.json()
-      throw new Error(errData.error || "Erro ao processar NFC-e")
-    }
-
-    const data = await response.json()
-    if (!data.success) {
-      scanError.value = data.error || "Erro ao processar NFC-e"
-      scanning.value = false
-      return
-    }
-
-    parsedNfce.value = data
-  } catch (err) {
-    scanError.value = err.message || "Erro ao processar a nota fiscal."
-  } finally {
-    scanning.value = false
   }
 }
 
