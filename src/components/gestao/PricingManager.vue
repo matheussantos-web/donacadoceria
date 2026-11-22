@@ -326,9 +326,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { recipesService, pricedProductsService, pricedProductComponentsService } from '@/services/recipes'
+import { useToast } from '@/composables/useToast'
 
 const props = defineProps({})
 const emit = defineEmits([])
+const { success, error: toastError } = useToast()
 
 // State
 const products = ref([])
@@ -528,7 +530,7 @@ async function saveProduct() {
     closeProductModal()
     await loadProducts()
   } catch (err) {
-    alert(err.message || 'Erro ao salvar produto.')
+    toastError(err.message || 'Erro ao salvar produto.')
   } finally {
     savingProduct.value = false
   }
@@ -540,7 +542,7 @@ async function deleteProduct(id) {
     await pricedProductsService.remove(id)
     await loadProducts()
   } catch (err) {
-    alert(err.message || 'Erro ao excluir produto.')
+    toastError(err.message || 'Erro ao excluir produto.')
   }
 }
 
@@ -574,9 +576,9 @@ async function applySuggestedPrice(product) {
       publishedToCatalog: product.publishedToCatalog,
     })
     await loadProducts()
-    alert('Preço atualizado para o valor sugerido!')
+    success('Preço atualizado para o valor sugerido!')
   } catch (err) {
-    alert(err.message || 'Erro ao atualizar preço.')
+    toastError(err.message || 'Erro ao atualizar preço.')
   }
 }
 </script>

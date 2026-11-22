@@ -396,9 +396,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { ordersService } from '@/services/orders'
 import { pricedProductsService } from '@/services/recipes'
+import { useToast } from '@/composables/useToast'
 
 const props = defineProps({})
 const emit = defineEmits([])
+const { success, error: toastError } = useToast()
 
 // Helpers de formatação
 const formatPrice = (price) => {
@@ -692,7 +694,7 @@ async function saveOrder() {
       console.warn('[OrdersManager] Não foi possível sincronizar pagamento financeiro:', syncErr.message)
     }
   } catch (err) {
-    alert(err.message || 'Erro ao salvar pedido.')
+    toastError(err.message || 'Erro ao salvar pedido.')
   } finally {
     savingOrder.value = false
   }
@@ -704,7 +706,7 @@ async function deleteOrder(id) {
     await ordersService.remove(id)
     await loadOrders()
   } catch (err) {
-    alert(err.message || 'Erro ao excluir pedido.')
+    toastError(err.message || 'Erro ao excluir pedido.')
   }
 }
 
@@ -726,7 +728,7 @@ async function advanceStatus(order) {
         stockMsg = '\nEstoque dos insumos atualizado!'
       }
     } catch (err) {
-      alert('Erro ao baixar estoque: ' + err.message)
+      toastError('Erro ao baixar estoque: ' + err.message)
       return
     }
   }
@@ -737,7 +739,7 @@ async function advanceStatus(order) {
       await ordersService.restoreOrderStock(order.id)
       stockMsg = '\nEstoque estornado.'
     } catch (err) {
-      alert('Erro ao estornar estoque: ' + err.message)
+      toastError('Erro ao estornar estoque: ' + err.message)
       return
     }
   }
@@ -761,9 +763,9 @@ async function advanceStatus(order) {
     } catch (syncErr) {
       console.warn('[OrdersManager] Não foi possível sincronizar pagamento financeiro:', syncErr.message)
     }
-    alert(`Pedido avançado para "${statusLabel(next)}".${stockMsg}`)
+    success(`Pedido avançado para "${statusLabel(next)}".${stockMsg}`)
   } catch (err) {
-    alert(err.message || 'Erro ao atualizar status.')
+    toastError(err.message || 'Erro ao atualizar status.')
   }
 }
 </script>

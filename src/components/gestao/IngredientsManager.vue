@@ -566,9 +566,12 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { ingredientsService } from '@/services/ingredients'
 import { stockMovementsService } from '@/services/stockMovements'
+import { useToast } from '@/composables/useToast'
 
 const props = defineProps({})
 const emit = defineEmits([])
+
+const { toast, toasts, success, error: toastError, warning, info, dismiss: dismissToast } = useToast()
 
 const ingredients = ref([])
 const loading = ref(false)
@@ -741,7 +744,7 @@ async function saveIngredient() {
     closeIngredientModal()
     await loadIngredients()
   } catch (err) {
-    alert(err.message || 'Erro ao salvar insumo.')
+    toastError(err.message || 'Erro ao salvar insumo.')
   } finally {
     savingIngredient.value = false
   }
@@ -753,7 +756,7 @@ async function deleteIngredient(id) {
     await ingredientsService.remove(id)
     await loadIngredients()
   } catch (err) {
-    alert(err.message || 'Erro ao excluir insumo.')
+    toastError(err.message || 'Erro ao excluir insumo.')
   }
 }
 
@@ -805,7 +808,7 @@ async function saveStockAdjustment() {
     closeStockExtractModal()
     await loadIngredients()
   } catch (err) {
-    alert(err.message || 'Erro ao ajustar estoque.')
+    toastError(err.message || 'Erro ao ajustar estoque.')
   } finally {
     savingAdjustment.value = false
   }

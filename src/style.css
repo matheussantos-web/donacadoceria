@@ -62,4 +62,109 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Animações suaves - Atelier de Confeitaria */
+  .fadeInUp {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+
+  .fadeInFast {
+    animation: fadeInFast 0.3s ease-out forwards;
+  }
+
+  .tab-fade-enter-active,
+  .tab-fade-leave-active {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  .tab-fade-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .tab-fade-leave-to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  .pulse-soft {
+    animation: pulseSoft 3s ease-in-out infinite;
+  }
+
+  .slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInFast {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulseSoft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Respeita preferência de redução de movimento */
+  @media (prefers-reduced-motion: reduce) {
+    .fadeInUp,
+    .fadeInFast,
+    .tab-fade-enter-active,
+    .tab-fade-leave-active,
+    .pulse-soft,
+    .slide-up {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+/* Transições do Toast */
+@layer components {
+  .toast-enter-active,
+  .toast-leave-active {
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .toast-enter-from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+
+  .toast-leave-to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
 }

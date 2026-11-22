@@ -307,9 +307,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { financeService } from '@/services/finance'
 import { invoicesService } from '@/services/invoices'
+import { useToast } from '@/composables/useToast'
 
 const props = defineProps({})
 const emit = defineEmits([])
+const { success, error: toastError } = useToast()
 
 // Helpers
 const formatPrice = (price) => {
@@ -465,9 +467,9 @@ async function syncPreviousInvoices() {
     }
 
     await loadTransactions()
-    alert(synced > 0 ? `${synced} nota(s) fiscal(ais) sincronizada(s) ao financeiro.` : 'Todas as notas já estavam sincronizadas.')
+    success(synced > 0 ? `${synced} nota(s) fiscal(ais) sincronizada(s) ao financeiro.` : 'Todas as notas já estavam sincronizadas.')
   } catch (err) {
-    alert(err.message || 'Erro ao sincronizar notas fiscais.')
+    toastError(err.message || 'Erro ao sincronizar notas fiscais.')
   }
 }
 
@@ -526,7 +528,7 @@ async function saveTransaction() {
     closeTransactionModal()
     await loadTransactions()
   } catch (err) {
-    alert(err.message || 'Erro ao salvar lançamento.')
+    toastError(err.message || 'Erro ao salvar lançamento.')
   } finally {
     savingTransaction.value = false
   }
@@ -542,7 +544,7 @@ async function deleteTransaction(id) {
     await financeService.remove(id)
     await loadTransactions()
   } catch (err) {
-    alert(err.message || 'Erro ao excluir lançamento.')
+    toastError(err.message || 'Erro ao excluir lançamento.')
   }
 }
 </script>
