@@ -388,16 +388,16 @@ const form = ref({
   components: [],
 })
 
+const productTotalCost = computed(() => {
+  return (form.value.components || []).reduce((sum, comp) => sum + (comp.costContribution || 0), 0)
+})
+
 watch(
   [productTotalCost, () => form.value.targetMarginPercent],
   () => {
     calcSuggestedPrice()
   }
 )
-
-const productTotalCost = computed(() => {
-  return (form.value.components || []).reduce((sum, comp) => sum + (comp.costContribution || 0), 0)
-})
 
 const suggestedPrice = computed(() => {
   const cost = productTotalCost.value
