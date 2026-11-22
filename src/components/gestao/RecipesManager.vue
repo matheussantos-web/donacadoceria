@@ -417,6 +417,7 @@ function addIngredientRow() {
     toastWarning("Cadastre ao menos um insumo no estoque antes de adicionar à receita.", { duration: 4000 })
     return
   }
+  if (!Array.isArray(form.value.recipeIngredients)) form.value.recipeIngredients = []
   form.recipeIngredients.push({
     ingredientId: '',
     quantityUsed: 0,

@@ -680,6 +680,7 @@ function closeOrderModal() {
 }
 
 function addOrderItem() {
+  if (!Array.isArray(form.value.items)) form.value.items = []
   form.value.items.push({
     idx: Date.now(),
     pricedProductId: '',
