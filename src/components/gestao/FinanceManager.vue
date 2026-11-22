@@ -204,7 +204,7 @@
 
         <!-- Corpo rolável -->
         <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-brand-surface">
-          <form @submit.prevent="saveTransaction" class="space-y-5">
+          <form id="transaction-form" @submit.prevent="saveTransaction" class="space-y-5">
             <!-- Tipo -->
             <div>
               <label class="block text-sm font-medium text-brand-text-muted mb-1">
@@ -536,8 +536,14 @@ function closeTransactionModal() {
 }
 
 async function saveTransaction() {
-  if (!form.value.description) return
-  if (!form.value.amount || form.value.amount <= 0) return
+  if (!form.value.description) {
+    toastError('Informe a descrição do lançamento.')
+    return
+  }
+  if (!form.value.amount || form.value.amount <= 0) {
+    toastError('Informe um valor maior que zero.')
+    return
+  }
 
   savingTransaction.value = true
   try {
@@ -561,6 +567,7 @@ async function saveTransaction() {
     closeTransactionModal()
     await loadTransactions()
   } catch (err) {
+    console.error('[FinanceManager] Erro ao salvar lançamento:', err)
     toastError(err.message || 'Erro ao salvar lançamento.')
   } finally {
     savingTransaction.value = false
