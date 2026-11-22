@@ -418,7 +418,7 @@ function addIngredientRow() {
     return
   }
   if (!Array.isArray(form.value.recipeIngredients)) form.value.recipeIngredients = []
-  form.recipeIngredients.push({
+  form.value.recipeIngredients.push({
     ingredientId: '',
     quantityUsed: 0,
     costContribution: 0,
@@ -426,13 +426,13 @@ function addIngredientRow() {
 }
 
 function removeIngredientRow(idx) {
-  form.recipeIngredients.splice(idx, 1)
+  form.value.recipeIngredients.splice(idx, 1)
   calcTotalCost()
 }
 
 function calcTotalCost() {
   let total = 0
-  form.recipeIngredients.forEach((ing) => {
+  form.value.recipeIngredients.forEach((ing) => {
     const ingredient = availableIngredients.value.find((i) => i.id === ing.ingredientId)
     if (ingredient) {
       ing.costContribution = ing.quantityUsed * ingredient.costPerBaseUnit
@@ -442,25 +442,25 @@ function calcTotalCost() {
     }
   })
 
-  const overhead = (total * form.overheadPercent) / 100
-  const labor = form.laborCost || 0
-  form.totalCost = total + overhead + labor
+  const overhead = (total * form.value.overheadPercent) / 100
+  const labor = form.value.laborCost || 0
+  form.value.totalCost = total + overhead + labor
 }
 
 async function saveRecipe() {
-  if (!form.name || form.yieldQuantity <= 0) return
+  if (!form.value.name || form.value.yieldQuantity <= 0) return
 
   savingRecipe.value = true
   try {
     const payload = {
-      name: form.name,
-      category: form.category,
-      yieldQuantity: form.yieldQuantity,
-      yieldUnit: form.yieldUnit,
-      overheadPercent: form.overheadPercent,
-      laborCost: form.laborCost,
-      totalCost: form.totalCost,
-      notes: form.notes,
+      name: form.value.name,
+      category: form.value.category,
+      yieldQuantity: form.value.yieldQuantity,
+      yieldUnit: form.value.yieldUnit,
+      overheadPercent: form.value.overheadPercent,
+      laborCost: form.value.laborCost,
+      totalCost: form.value.totalCost,
+      notes: form.value.notes,
     }
 
     let savedRecipe
@@ -478,7 +478,7 @@ async function saveRecipe() {
       for (const oldIng of existing) {
         await recipeIngredientsService.remove(oldIng.id)
       }
-      for (const ing of form.recipeIngredients) {
+      for (const ing of form.value.recipeIngredients) {
         if (ing.ingredientId && ing.quantityUsed > 0) {
           await recipeIngredientsService.create({
             recipeId: savedRecipe.id,

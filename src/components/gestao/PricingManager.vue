@@ -493,8 +493,8 @@ function closeProductModal() {
 }
 
 function addComponentRow() {
-  if (!Array.isArray(form.components)) form.components = []
-  form.components.push({
+  if (!Array.isArray(form.value.components)) form.value.components = []
+  form.value.components.push({
     recipeId: '',
     multiplierOrQty: 1,
     costContribution: 0,
