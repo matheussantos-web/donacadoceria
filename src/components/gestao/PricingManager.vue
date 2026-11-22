@@ -100,7 +100,12 @@
           </div>
           <div v-if="productMarginNeedsReview(product)" class="mb-3">
             <div class="flex items-center gap-1 px-2 py-1 rounded bg-amber-50 border border-amber-100 text-amber-800 text-xs font-medium mb-1">
-              ⚠️ Margem abaixo do alvo — reajustar preço
+              <span class="text-sm text-amber-800 flex items-center gap-2">
+                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Margem abaixo do alvo — reajustar preço
+              </span>
             </div>
             <button
               @click="applySuggestedPrice(product)"
@@ -146,7 +151,9 @@
             class="p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
             aria-label="Fechar"
           >
-            <span class="text-2xl">✕</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
           </button>
         </div>
 
@@ -232,7 +239,9 @@
                 @click="removeComponent(idx)"
                 class="text-red-600 hover:text-red-800 text-xs"
               >
-                ✕
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
               </button>
             </div>
 
@@ -248,7 +257,7 @@
           <div class="pt-3 border-t border-gray-100 flex justify-between mb-3">
             <span class="font-medium text-brand-text-primary">Custo total de produção:</span>
             <span class="font-display font-medium text-xl text-brand-text-primary">
-              R$ {{ formatPrice(productTotalCost) }}
+              {{ formatPrice(productTotalCost) }}
             </span>
           </div>
 

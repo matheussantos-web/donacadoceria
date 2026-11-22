@@ -15,7 +15,7 @@
             Conciliação de Nota Fiscal
           </h3>
           <p class="text-sm text-brand-text-muted mt-1">
-            {{ nfce.storeName }} · {{ nfce.issueDate }} · Total R$ {{ formatPrice(nfce.totalAmount) }}
+            {{ nfce.storeName }} · {{ formatDateBR(nfce.issueDate) }} · Total R$ {{ formatPrice(nfce.totalAmount) }}
           </p>
         </div>
         <button
@@ -23,7 +23,9 @@
           class="p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
           aria-label="Fechar"
         >
-          <span class="text-2xl">✕</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
         </button>
       </div>
 
@@ -70,7 +72,10 @@
         <!-- Aviso de duplicata -->
         <div v-if="duplicateWarning" class="bg-amber-50 border border-amber-100 rounded-lg p-3 mb-4">
           <span class="text-sm text-amber-800 flex items-center gap-2">
-            ⚠️ Esta nota ({{ duplicateWarning.access_key }}) já foi importada anteriormente.
+            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Esta nota ({{ duplicateWarning.access_key }}) já foi importada anteriormente.
           </span>
         </div>
 
@@ -231,6 +236,13 @@ const saving = ref(false)
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price || 0)
+
+const formatDateBR = (iso) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso
+  return d.toLocaleDateString('pt-BR')
+}
 
 const formatNumber = (num) => Number(num || 0).toLocaleString('pt-Br')
 

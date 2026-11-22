@@ -133,7 +133,7 @@
             <div class="flex justify-between">
               <span class="text-brand-text-muted">Estoque:</span>
               <span class="font-medium">
-                {{ formatNumber(item.stockQuantity) }} {{ item.baseUnit }}
+                {{ formatNumber(item.stockQuantity) }} {{ item.baseUnit }} ({{ Math.floor(Number(item.stockQuantity) / Number(item.packageSize || 1)) }} cx)
               </span>
             </div>
             <div class="flex justify-between">
@@ -163,7 +163,11 @@
               <div
                 class="h-2 rounded-full transition-all duration-300"
                 :class="
-                  item.stockQuantity <= item.minStockAlert
+                  item.stockQuantity <= 0
+                    ? 'bg-red-500 animate-pulse'
+                    : (!item.minStockAlert || item.minStockAlert <= 0)
+                    ? 'bg-emerald-500'
+                    : item.stockQuantity <= item.minStockAlert
                     ? 'bg-red-500 animate-pulse'
                     : item.stockQuantity <= item.minStockAlert * 1.5
                     ? 'bg-amber-500'
@@ -217,7 +221,9 @@
             class="p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
             aria-label="Fechar"
           >
-            <span class="text-2xl">✕</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
           </button>
         </div>
 
@@ -392,7 +398,7 @@
                 <div class="flex justify-between">
                   <span class="text-brand-text-muted">Custo por embalagem:</span>
                   <span class="font-medium text-brand-text-primary">
-                    {{ costPerPackage }} ({{ purchaseUnitLabel }} com {{ formatNumber(form.packageSize) }}{{ form.baseUnit }})
+                    {{ costPerPackage }} ({{ purchaseUnitLabel }} com {{ formatNumber(form.packageSize) }} {{ form.baseUnit }})
                   </span>
                 </div>
                 <div class="flex justify-between">
@@ -404,7 +410,7 @@
                 <div class="flex justify-between border-t border-gray-200 pt-2">
                   <span class="text-brand-text-muted">Estoque total:</span>
                   <span class="font-medium">
-                    {{ formatNumber(form.stockQuantity) }}{{ form.baseUnit }} (
+                    {{ formatNumber(form.stockQuantity) }} {{ form.baseUnit }} (
                     {{ formatNumber(form.stockPackages) }} {{ purchaseUnitLabel }}
                     )
                   </span>
@@ -461,7 +467,9 @@
           class="p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
           aria-label="Fechar"
         >
-          <span class="text-2xl">✕</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
         </button>
       </div>
 
@@ -661,14 +669,20 @@ const formatNumber = (num) => Number(num).toLocaleString('pt-BR')
 
 // Nível de estoque percentual para barra visual
 const stockPercentage = (item) => {
-  if (!item || !item.minStockAlert || item.minStockAlert <= 0) return 100
-  return Math.min(100, Math.round((Number(item.stockQuantity) / Number(item.minStockAlert)) * 100))
+  if (!item) return 0
+  const qty = Number(item.stockQuantity) || 0
+  const min = Number(item.minStockAlert) || 0
+  if (qty <= 0) return 0
+  if (min <= 0) return 100
+  return Math.min(100, Math.round((qty / (min * 2)) * 100))
 }
 
 const stockLevelLabel = (item) => {
-  if (!item || !item.minStockAlert || item.minStockAlert <= 0) return 'Estoque OK'
-  const qty = Number(item.stockQuantity)
-  const min = Number(item.minStockAlert)
+  if (!item) return 'Crítico'
+  const qty = Number(item.stockQuantity) || 0
+  const min = Number(item.minStockAlert) || 0
+  if (qty <= 0) return 'Crítico'
+  if (min <= 0) return 'Estoque OK'
   if (qty <= min) return 'Crítico'
   if (qty <= min * 1.5) return 'Atenção'
   return 'OK'

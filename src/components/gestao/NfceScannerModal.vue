@@ -10,7 +10,9 @@
           class="absolute top-2 right-2 p-2 rounded-lg hover:bg-gray-100 text-brand-text-muted"
           aria-label="Fechar"
         >
-          <span class="text-2xl">✕</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
         </button>
       </div>
 
@@ -123,7 +125,7 @@
             <div>
               <div class="font-medium text-brand-text-primary">{{ inv.storeName }}</div>
               <div class="text-xs text-brand-text-muted">
-                {{ inv.issueDate }} · Total {{ formatPrice(inv.totalAmount) }}
+                {{ formatDateBR(inv.issueDate) }} · Total {{ formatPrice(inv.totalAmount) }}
               </div>
             </div>
             <button
@@ -146,7 +148,7 @@
           </div>
           <div class="flex justify-between">
             <span class="text-brand-text-muted">Data:</span>
-            <span class="font-medium">{{ parsedNfce.issueDate }}</span>
+            <span class="font-medium">{{ formatDateBR(parsedNfce.issueDate) }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-brand-text-muted">Total:</span>
@@ -203,6 +205,13 @@ let startPromise = null
 
 const formatPrice = (price) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(price || 0)
+
+const formatDateBR = (iso) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso
+  return d.toLocaleDateString('pt-BR')
+}
 
 onMounted(() => {
   initScanner()

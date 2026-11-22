@@ -36,8 +36,8 @@
                 : 'text-brand-primary'
             "
             class="text-xl"
+            v-html="toastIcon(t.type)"
           >
-            {{ toastIcon(t.type) }}
           </span>
         </div>
 
@@ -60,7 +60,9 @@
           class="shrink-0 text-gray-400 hover:text-brand-primary transition-colors p-1"
           aria-label="Fechar notificação"
         >
-          <span class="text-xs">✕</span>
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
         </button>
       </div>
     </transition-group>
@@ -81,10 +83,10 @@ function dismiss(id) {
 
 function toastIcon(type) {
   const icons = {
-    success: '✔',
-    error: '✖',
-    warning: '⚠',
-    info: 'ℹ',
+    success: `<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`,
+    error: `<svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`,
+    warning: `<svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+    info: `<svg class="w-4 h-4 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
   }
   return icons[type] || icons.info
 }
