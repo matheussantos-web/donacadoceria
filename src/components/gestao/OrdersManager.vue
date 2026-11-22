@@ -546,7 +546,7 @@ async function loadProducts() {
 }
 
 const orderTotal = computed(() => {
-  return form.value.items.reduce((sum, item) => sum + Number(item.subtotal || 0), 0)
+  return (form.value.items || []).reduce((sum, item) => sum + Number(item.subtotal || 0), 0)
 })
 
 function openOrderModal(order = null) {

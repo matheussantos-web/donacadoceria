@@ -364,7 +364,7 @@ const upcomingOrders = computed(() =>
 )
 
 const totalToReceive = computed(() =>
-  orders.value
+  (orders.value || [])
     .filter((o) => o.status !== "entregue" && o.status !== "cancelado")
     .reduce((sum, o) => sum + Math.max(0, o.totalAmount - o.depositPaid), 0)
 )
@@ -374,19 +374,19 @@ const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOSt
 const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
 
 const monthTransactions = computed(() =>
-  financialTransactions.value.filter(
+  (financialTransactions.value || []).filter(
     (t) => t.transactionDate >= currentMonthStart && t.transactionDate <= currentMonthEnd
   )
 )
 
 const monthEntries = computed(() =>
-  monthTransactions.value
+  (monthTransactions.value || [])
     .filter((t) => t.type === "entrada")
     .reduce((sum, t) => sum + t.amount, 0)
 )
 
 const monthExits = computed(() =>
-  monthTransactions.value
+  (monthTransactions.value || [])
     .filter((t) => t.type === "saida")
     .reduce((sum, t) => sum + t.amount, 0)
 )

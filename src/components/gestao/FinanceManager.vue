@@ -395,14 +395,14 @@ const filteredTransactions = computed(() => {
 })
 
 const totalEntries = computed(() =>
-  filteredTransactions.value
-    .filter((t) => t.type === 'entrada')
+  (filteredTransactions.value || [])
+    .filter((t) => t.type === "entrada")
     .reduce((sum, t) => sum + t.amount, 0)
 )
 
 const totalExits = computed(() =>
-  filteredTransactions.value
-    .filter((t) => t.type === 'saida')
+  (filteredTransactions.value || [])
+    .filter((t) => t.type === "saida")
     .reduce((sum, t) => sum + t.amount, 0)
 )
 

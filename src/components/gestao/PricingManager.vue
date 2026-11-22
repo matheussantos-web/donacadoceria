@@ -369,7 +369,7 @@ watch(
 )
 
 const productTotalCost = computed(() => {
-  return form.components.reduce((sum, comp) => sum + (comp.costContribution || 0), 0)
+  return (form.components || []).reduce((sum, comp) => sum + (comp.costContribution || 0), 0)
 })
 
 const suggestedPrice = computed(() => {
