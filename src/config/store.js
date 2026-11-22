@@ -1,5 +1,5 @@
 /**
- * Configuração central da loja Dona Cá Doceria — Confeitaria Artesanal
+ * Configuração central da loja Dona Ca Doceria — Confeitaria Artesanal
  * ============================================================
  * EDITE ESTE ARQUIVO PARA CONFIGURAR A LOJA SEM TOCAR NO CÓDIGO DOS COMPONENTES.
  *
@@ -12,7 +12,7 @@
 
 export const storeConfig = {
   /** Nome exibido da loja/marca (não altere a menos que a marca mude) */
-  storeName: 'Dona Cá Doceria — Confeitaria Artesanal',
+  storeName: 'Dona Ca Doceria — Confeitaria Artesanal',
 
   /** Número do WhatsApp no formato APENAS DÍGITOS (código país + DDD + número)
    *  Exemplo BR: "5521999999999" (55=Brasil, 21=DDD RJ, 999999999=celular)
@@ -22,7 +22,7 @@ export const storeConfig = {
   /** Texto padrão da saudação no WhatsApp (opcional) */
   whatsappDefaultMessage:
     import.meta.env.VITE_WHATSAPP_DEFAULT_MESSAGE ||
-    'Olá! Gostaria de saber mais sobre os doces e bolos da Dona Cá Doceria.',
+    'Olá! Gostaria de saber mais sobre os doces e bolos da Dona Ca Doceria.',
 
   /** Link do Instagram (opcional) - URL completa com https:// */
   instagramUrl: import.meta.env.VITE_INSTAGRAM_URL || '',

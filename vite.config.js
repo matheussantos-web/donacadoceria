@@ -13,8 +13,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
       },
       manifest: {
-        name: 'Dona Cá Doceria',
-        short_name: 'Dona Cá Doceria',
+        name: 'Dona Ca Doceria',
+        short_name: 'Dona Ca Doceria',
         description: 'Doces, bolos e sobremesas de confeitaria artesanal',
         display: 'standalone',
         background_color: '#FFFFFF',

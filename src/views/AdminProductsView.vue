@@ -84,7 +84,7 @@ async function loadData() {
 }
 async function loadProducts() { products.value = await productService.list() }
 async function loadCategories() { categories.value = await categoryService.list() }
-async function loadSettings() { settings.value = await storeSettingsService.get() || { storeName: 'Dona Cá Doceria — Confeitaria Artesanal', whatsappNumber: '', instagramUrl: '', contactEmail: '', isOpen: true, announcementText: '', announcementActive: false, pickupAddress: '', pickupHours: '', pixKey: '' } }
+async function loadSettings() { settings.value = await storeSettingsService.get() || { storeName: 'Dona Ca Doceria — Confeitaria Artesanal', whatsappNumber: '', instagramUrl: '', contactEmail: '', isOpen: true, announcementText: '', announcementActive: false, pickupAddress: '', pickupHours: '', pixKey: '' } }
 async function logout() { await signOut() }
 function showProductModal(product = null) { editingProduct.value = product; showProductForm.value = true }
 async function onProductSaved() { showProductForm.value = false; editingProduct.value = null; await loadProducts() }

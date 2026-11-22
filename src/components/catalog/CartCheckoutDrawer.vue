@@ -298,7 +298,7 @@ async function sendToWhatsApp() {
   if (items.value.length === 0) return
 
   if (!isWhatsAppConfigured()) {
-    alert('WhatsApp não configurado. Entre em contato com a Dona Cá Doceria diretamente.')
+    alert('WhatsApp não configurado. Entre em contato com a Dona Ca Doceria diretamente.')
     return
   }
 
@@ -318,7 +318,7 @@ async function sendToWhatsApp() {
   const itemsText = formatItemsForWhatsApp()
 
   const message = [
-    '*Novo Pedido — Dona Cá Doceria*',
+    '*Novo Pedido — Dona Ca Doceria*',
     '',
     itemsText,
     `*Subtotal:* ${subtotal.value}`,
@@ -329,7 +329,7 @@ async function sendToWhatsApp() {
     advanceWarning,
     orderNotes.value ? `\n*Observações:* ${orderNotes.value}` : '',
     '',
-    'Obrigado por escolher a Dona Cá Doceria!',
+    'Obrigado por escolher a Dona Ca Doceria!',
   ]
     .filter(Boolean)
     .join('\n')

@@ -68,7 +68,7 @@ onMounted(() => {
           </h1>
           <p class="font-sans text-lg sm:text-xl text-brand-text-muted max-w-2xl mx-auto mb-8 leading-relaxed">
             Bolos, doces finos e sobremesas produzidos de forma artesanal no
-            Atelier Dona Cá Doceria. Tudo sob encomenda, com ingredientes
+            Atelier Dona Ca Doceria. Tudo sob encomenda, com ingredientes
             selecionados e muito carinho.
           </p>
           <div class="flex flex-col sm:flex-row items-center justify-center gap-3">

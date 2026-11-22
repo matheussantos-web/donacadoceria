@@ -93,7 +93,7 @@ export const recalculateCostsService = {
       // Atualizar apenas total_cost (unit_cost é gerado pelo banco)
       const { error: updErr } = await supabase
         .from('recipes')
-        .update({ total_cost })
+        .update({ total_cost: totalCost })
         .eq('id', recipe.id)
 
       if (updErr) {

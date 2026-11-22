@@ -9,13 +9,19 @@
             <img :src="logoImg" class="h-10 w-auto" alt="Logo" />
             <div>
               <h1 class="font-display font-bold text-2xl text-brand-text-primary tracking-tight">
-                Gestão — Dona Cá Doceria
+                Gestão — Dona Ca Doceria
               </h1>
               <p class="text-xs text-brand-text-muted">
                 Atelier de Confeitaria Contemporânea · {{ greeting }}
               </p>
             </div>
           </div>
+          <router-link
+            to="/"
+            class="text-sm font-medium text-brand-text-muted hover:text-brand-primary transition-colors px-4 py-2.5"
+          >
+            Ver catálogo público
+          </router-link>
           <button
             @click="logout"
             class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-brand-text-muted hover:text-brand-primary transition-colors"
@@ -308,7 +314,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, RouterLink } from "vue-router"
 import { useToast } from "@/composables/useToast"
 import logoImg from "@/assets/logo-donaca.jpg"
 import IngredientsManager from "@/components/gestao/IngredientsManager.vue"

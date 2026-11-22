@@ -4,7 +4,7 @@
       <div class="text-center mb-8">
         <img
           :src="logoImg"
-          alt="Dona Cá Doceria"
+          alt="Dona Ca Doceria"
           class="w-16 h-16 mx-auto mb-4"
         />
         <h2 class="font-display font-medium text-2xl text-brand-text-primary">

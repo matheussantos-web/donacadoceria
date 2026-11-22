@@ -68,7 +68,7 @@ export function buildPurchaseMessage(product, selectedColor = null, selectedSize
   const sizeInfo = selectedSize ? `Tamanho: ${selectedSize}` : ''
 
   const lines = [
-    'Oi, Dona Cá! Tudo bem?',
+    'Oi, Dona Ca! Tudo bem?',
     '',
     'Gostaria de saber se este item ainda está disponível e quais sabores vocês têm:',
     '',

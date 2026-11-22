@@ -1,5 +1,5 @@
 /**
- * Camada de dados de produtos para a v2 — Dona Cá Doceria.
+ * Camada de dados de produtos para a v2 — Dona Ca Doceria.
  *
  * Estratégia:
  * - Se o Supabase estiver configurado e a tabela `products` existir, lê/escreve no Postgres.

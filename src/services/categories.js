@@ -1,5 +1,5 @@
 /**
- * Camada de dados de categorias para a Dona Cá Doceria.
+ * Camada de dados de categorias para a Dona Ca Doceria.
  *
  * Estratégia:
  * - Se o Supabase estiver configurado, lê/escreve no Postgres.

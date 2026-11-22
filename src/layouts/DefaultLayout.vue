@@ -26,12 +26,12 @@ const mobileMenuOpen = ref(false)
         <a
           href="/"
           class="flex items-center gap-3"
-          aria-label="Dona Cá Doceria - Início"
+          aria-label="Dona Ca Doceria - Início"
         >
           <img :src="logoImg" alt="" class="w-10 h-10" />
           <span
             class="font-display font-medium text-brand-text-primary text-sm hidden sm:block"
-            >Dona Cá Doceria</span
+            >Dona Ca Doceria</span
           >
         </a>
 
@@ -133,11 +133,11 @@ const mobileMenuOpen = ref(false)
         <!-- Logo no lugar do h1 -->
         <img
           :src="logoImg"
-          alt="Dona Cá Doceria"
+          alt="Dona Ca Doceria"
           class="h-48 sm:h-60 w-auto mx-auto object-contain mb-6"
           aria-hidden="true"
         />
-        <span class="sr-only">Dona Cá Doceria — Confeitaria Artesanal</span>
+        <span class="sr-only">Dona Ca Doceria — Confeitaria Artesanal</span>
 
         <p class="text-lg sm:text-xl text-brand-text-muted font-light mb-6 max-w-2xl mx-auto text-balance">
           Doces feitos com afeto, prontos para adoçar seu momento!
@@ -151,7 +151,7 @@ const mobileMenuOpen = ref(false)
             rel="noopener noreferrer"
             class="btn-primary text-lg px-8 py-4"
           >
-            <WhatsAppIcon class="w-6 h-6 mr-2" /> Falar com a Dona Cá
+            <WhatsAppIcon class="w-6 h-6 mr-2" /> Falar com a Dona Ca
           </a>
           <a
             v-else

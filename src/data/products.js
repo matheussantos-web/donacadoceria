@@ -1,5 +1,5 @@
 /**
- * Catalogo de Produtos - Dona Cá Doceria - Confeitaria Artesanal
+ * Catalogo de Produtos - Dona Ca Doceria - Confeitaria Artesanal
  * Foco: Bolos Festivos, Doces Finos, Sobremesas, Pronta Entrega
  * ============================================================
  * COMO ADICIONAR/EDITAR PRODUTOS:

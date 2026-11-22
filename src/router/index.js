@@ -15,37 +15,35 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: CatalogView,
-      meta: { layout: 'default', title: 'Catálogo — Dona Cá Doceria' },
+      meta: { layout: 'default', title: 'Dona Ca Doceria — Confeitaria Artesanal' },
     },
     {
       path: '/f/:code',
       name: 'photo-redirect',
       component: PhotoRedirectView,
-      meta: { layout: 'auth', title: 'Dona Cá Doceria — Confeitaria Artesanal' },
+      meta: { layout: 'auth', title: 'Dona Ca Doceria — Confeitaria Artesanal' },
     },
     {
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta: { layout: 'auth', title: 'Entrar — Dona Cá Doceria' },
+      meta: { layout: 'auth', title: 'Entrar — Dona Ca Doceria' },
     },
     {
       path: '/admin',
       name: 'admin',
       component: AdminProductsView,
-      meta: { layout: 'auth', requiresAuth: true, title: 'Painel — Dona Cá Doceria' },
+      meta: { layout: 'auth', requiresAuth: true, title: 'Painel — Dona Ca Doceria' },
     },
     {
       path: '/vitrine',
-      name: 'vitrine',
-      component: CatalogView,
-      meta: { layout: 'default', title: 'Vitrine — Dona Cá Doceria' },
+      redirect: '/',
     },
     {
       path: '/gestao',
       name: 'gestao',
       component: GestaoView,
-      meta: { layout: 'auth', requiresAuth: true, title: 'Gestão — Dona Cá Doceria' },
+      meta: { layout: 'auth', requiresAuth: true, title: 'Gestão — Dona Ca Doceria' },
     },
   ],
 })
@@ -63,7 +61,7 @@ router.beforeEach(async (to, from, next) => {
 
 // Atualiza o title da página e a meta tag apple-mobile-web-app-title dinamicamente
 router.afterEach((to) => {
-  const pageTitle = to.meta.title || 'Dona Cá Doceria — Confeitaria Artesanal'
+  const pageTitle = to.meta.title || 'Dona Ca Doceria — Confeitaria Artesanal'
   document.title = pageTitle
   const meta = document.querySelector('meta[name="apple-mobile-web-app-title"]')
   if (meta) {
