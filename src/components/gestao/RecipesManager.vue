@@ -209,6 +209,7 @@
               <div class="flex items-center justify-between mb-3">
                 <h4 class="font-medium text-brand-text-primary">Ingredientes</h4>
                 <button
+                  type="button"
                   @click="addIngredientRow()"
                   class="text-xs text-brand-primary underline hover:text-brand-accent"
                 >
@@ -253,6 +254,7 @@
 
                 <!-- Remover -->
                 <button
+                  type="button"
                   @click="removeIngredientRow(idx)"
                   class="text-red-600 hover:text-red-800 text-xs"
                 >

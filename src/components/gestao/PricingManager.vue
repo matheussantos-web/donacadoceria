@@ -225,6 +225,7 @@
               </span>
 
               <button
+                type="button"
                 @click="removeComponent(idx)"
                 class="text-red-600 hover:text-red-800 text-xs"
               >
@@ -233,6 +234,7 @@
             </div>
 
             <button
+              type="button"
               @click="addComponentRow()"
               class="text-xs text-brand-primary underline hover:text-brand-accent ml-1 mt-2"
             >

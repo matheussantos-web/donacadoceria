@@ -259,7 +259,7 @@
 
         <!-- Corpo rolável -->
         <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-brand-surface">
-          <form @submit.prevent="saveOrder" class="space-y-5">
+          <form id="order-form" @submit.prevent="saveOrder" class="space-y-5">
             <!-- Cliente -->
             <div>
               <label class="block text-sm font-medium text-brand-text-muted mb-1">
@@ -315,6 +315,7 @@
               <div class="flex items-center justify-between mb-3">
                 <h4 class="font-medium text-brand-text-primary">Itens da encomenda</h4>
                 <button
+                  type="button"
                   @click="addOrderItem"
                   class="text-xs text-brand-primary underline hover:text-brand-accent"
                 >
@@ -372,6 +373,7 @@
 
                 <!-- Remover -->
                 <button
+                  type="button"
                   @click="removeOrderItem(idx)"
                   class="text-red-600 hover:text-red-800 text-xs"
                 >
