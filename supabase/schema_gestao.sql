@@ -311,7 +311,7 @@ create table if not exists public.stock_movements (
   movement_type text not null check (movement_type in ('entrada', 'saida')),
   quantity numeric(10,2) not null,
   reason text not null,
-  reference_id uuid nullable,
+  reference_id uuid,
   created_at timestamptz not null default now()
 );
 
