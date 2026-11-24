@@ -169,6 +169,17 @@
           <div
             class="sticky top-6 bg-brand-white rounded-2xl p-6 shadow-lg border border-brand-mauve/20 max-h-[calc(100vh-12px)] overflow-y-auto"
           >
+            <div class="mb-6">
+              <Cake3DPreview
+                :tamanho="tamanhoSelecionado"
+                :massa="massaSelecionada"
+                :recheios="recheiosSelecionados"
+                :cobertura="coberturaSelecionada"
+                :frase-topo="fraseTopo"
+                :linha="linhaSelecionada"
+              />
+            </div>
+
             <div class="flex items-center justify-between mb-4">
               <h3 class="font-display font-bold text-xl text-brand-cacau">Resumo do Bolo</h3>
               <span class="font-display font-bold text-xl text-brand-berry tabular-nums">R$ {{ precoTotal }}</span>
@@ -232,6 +243,7 @@
 </template>
 <script setup>
 import { ref, computed } from 'vue'
+import Cake3DPreview from '@/components/Cake3DPreview.vue'
 import {
   TAMANHOS, LINHAS, MASSAS, RECHEIOS, COBERTURAS, REGRAS,
 } from '@/data/products'
