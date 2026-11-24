@@ -89,6 +89,28 @@ onMounted(() => {
         </div>
       </header>
 
+
+      <!-- Chamada em destaque: Montador de Bolos -->
+      <section class="mb-10">
+        <div class="bg-brand-rose/10 border border-brand-rose/30 rounded-2xl p-6 sm:p-8 text-center sm:text-start">
+          <div class="max-w-2xl mx-auto sm:mx-0">
+            <h3 class="font-display font-bold text-2xl text-brand-cacau mb-2">
+              Monte seu Bolo Personalizado
+            </h3>
+            <p class="text-brand-cacau/70 text-sm sm:text-base mb-4">
+              Escolha linha, tamanho (P, M, G, GG), massa, recheios e cobertura. O preço é calculado em tempo real.
+            </p>
+            <router-link
+              to="/montar-bolo"
+              class="btn-primary text-sm font-semibold"
+            >
+              Criar Meu Bolo
+              <span class="ml-1">›</span>
+            </router-link>
+          </div>
+        </div>
+      </section>
+
       <!-- Barra de Categorias (sticky, scroll horizontal limpo) -->
       <FilterBar
         :categories="categories"

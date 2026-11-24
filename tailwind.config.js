@@ -8,23 +8,20 @@ export default {
     extend: {
       colors: {
         brand: {
-          bg: '#FDF9F9',
-          surface: '#FFFFFF',
-          'surface-alt': '#F9EFEF',
-          primary: '#C46D7C',
-          'primary-hover': '#A85665',
-          secondary: '#F29CAB',
-          chocolate: '#7A4426',
-          'text-primary': '#3B231E',
-          'text-muted': '#7D6462',
+          creme: '#F8F0E9',
+          rose: '#C98291',
+          cacau: '#6D4A4A',
+          mauve: '#B88D91',
+          berry: '#8E5365',
+          white: '#FFFFFF',
         },
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
-        display: ['Fraunces', 'Georgia', 'serif'],
-        fraunces: ['Fraunces', 'Georgia', 'serif'],
+        sans: ["Montserrat", 'system-ui', 'sans-serif'],
+        display: ["Playfair Display", 'Georgia', 'serif'],
+        script: ["Dancing Script", 'cursive'],
       },
     },
   },
   plugins: [],
-}
+},

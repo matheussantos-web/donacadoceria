@@ -4,6 +4,7 @@ import LoginView from '@/views/LoginView.vue'
 import AdminProductsView from '@/views/AdminProductsView.vue'
 import GestaoView from '@/views/GestaoView.vue'
 import PhotoRedirectView from '@/views/PhotoRedirectView.vue'
+import CakeBuilder from '@/views/CakeBuilder.vue'
 import { useAuth } from '@/composables/useAuth'
 
 const { isAuthenticated, authReadyPromise } = useAuth()
@@ -38,6 +39,12 @@ const router = createRouter({
     {
       path: '/vitrine',
       redirect: '/',
+    },
+    {
+      path: '/montar-bolo',
+      name: 'montar-bolo',
+      component: CakeBuilder,
+      meta: { layout: 'default', title: 'Monte seu Bolo — Dona Ca Doceria' },
     },
     {
       path: '/gestao',

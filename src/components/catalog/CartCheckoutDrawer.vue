@@ -116,6 +116,19 @@
         </div>
       </div>
 
+        <!-- Alerta carrinho misto -->
+        <div v-if="carrinhoMisto" class="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-5">
+          <div class="flex items-start gap-2">
+            <svg class="w-4 h-4 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div class="text-xs text-amber-800 leading-relaxed">
+              Seu carrinho mistura itens de <strong>Pronta Entrega</strong> e <strong>Sob Encomenda</strong>.
+              <br />Os prazos são diferentes e serão alinhados no WhatsApp.
+            </div>
+          </div>
+        </div>
+
       <!-- Resumo -->
       <div class="p-5 border-t border-gray-100 bg-brand-bg">
         <div class="flex justify-between mb-3">
@@ -125,6 +138,7 @@
           </span>
         </div>
         <div class="text-[10px] text-brand-text-muted mb-4">
+          {{ temEncomenda.value ? 'Produtos sob encomenda: ' + REGRAS.entradaPercentual + '% de entrada no ato e o restante na entrega.' : 'Pronta entrega: pagamento na entrega.' }}
           O prazo mínimo de entrega é calculado com base na maior antecedência dos itens da sacola.
         </div>
 
@@ -263,7 +277,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useCart } from '@/composables/useCart'
-import { formatPrice } from '@/data/products'
+import { formatPrice, REGRAS } from '@/data/products'
 import { getWhatsAppUrl, isWhatsAppConfigured } from '@/config/store'
 import { X, AlertTriangle } from 'lucide-vue-next'
 
@@ -273,7 +287,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-const { items, addItem, removeItem, setQuantity, clearCart, itemCount, subtotal, minAdvanceHours, formatItemsForWhatsApp } = useCart()
+const { items, addItem, removeItem, setQuantity, clearCart, itemCount, subtotal, minAdvanceHours, formatItemsForWhatsApp, carrinhoMisto, temProntaEntrega, temEncomenda } = useCart()
 
 const deliveryType = ref('pickup')
 const scheduledDate = ref('')
@@ -285,8 +299,7 @@ const timeWindows = ['Manhã (09h–12h)', 'Tarde (14h–18h)', 'Noite (18h–20
 
 const minDate = computed(() => {
   const today = new Date()
-  const hours = minAdvanceHours.value
-  const future = new Date(today.getTime() + hours * 60 * 60 * 1000)
+  const future = new Date(today.getTime() + REGRAS.antecedenciaMinimaDias * 24 * 60 * 60 * 1000)
   return future.toISOString().split('T')[0]
 })
 

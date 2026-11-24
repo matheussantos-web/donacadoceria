@@ -1,18 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-sans: 'Montserrat', system-ui, sans-serif;
   --font-display: 'Playfair Display', Georgia, serif;
+  --font-script: 'Dancing Script', cursive;
 
-  --color-brand-bg: #FDF9F9;
-  --color-brand-surface: #FFFFFF;
-  --color-brand-surface-alt: #F9EFEF;
-  --color-brand-primary: #C46D7C;
-  --color-brand-primary-hover: #A85665;
-  --color-brand-secondary: #F29CAB;
-  --color-brand-chocolate: #7A4426;
-  --color-brand-text-primary: #3B231E;
-  --color-brand-text-muted: #7D6462;
+  --color-brand-creme: #F8F0E9;
+  --color-brand-rose: #C98291;
+  --color-brand-cacau: #6D4A4A;
+  --color-brand-mauve: #B88D91;
+  --color-brand-berry: #8E5365;
+  --color-brand-white: #FFFFFF;
 }
 
 @layer base {
@@ -24,36 +22,40 @@
   }
 
   body {
-    @apply bg-brand-bg text-brand-text-primary min-h-screen;
+    @apply bg-brand-creme text-brand-cacau min-h-screen;
     margin: 0;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display font-medium text-brand-text-primary;
+    @apply font-display font-medium text-brand-cacau;
+  }
+
+  .font-script {
+    font-family: var(--font-script);
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center px-6 py-3 bg-brand-primary text-white font-medium rounded-lg
-           hover:bg-brand-primary-hover focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2
+    @apply inline-flex items-center justify-center px-6 py-3 bg-brand-rose text-white font-medium rounded-lg
+           hover:bg-brand-berry focus:outline-none focus:ring-2 focus:ring-brand-rose focus:ring-offset-2
            transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-6 py-3 border-2 border-brand-primary text-brand-primary font-medium rounded-lg
-           hover:bg-brand-primary hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2
+    @apply inline-flex items-center justify-center px-6 py-3 border-2 border-brand-mauve text-brand-cacau font-medium rounded-lg
+           hover:bg-brand-mauve hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-mauve focus:ring-offset-2
            transition-colors duration-200;
   }
 
   .card {
-    @apply bg-brand-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden;
+    @apply bg-brand-white rounded-xl shadow-sm border border-brand-mauve/20 overflow-hidden;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 bg-brand-surface border border-gray-200 rounded-lg text-brand-text-primary
-           placeholder:text-brand-text-muted/60
-           focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent
+    @apply w-full px-4 py-3 bg-brand-white border border-brand-mauve/30 text-brand-cacau
+           placeholder:text-brand-cacau/50
+           focus:outline-none focus:ring-2 focus:ring-brand-rose focus:border-transparent
            transition-colors duration-200;
   }
 }
@@ -96,55 +98,28 @@
   }
 
   @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(16px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes fadeInFast {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes pulseSoft {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.6;
-    }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
   }
 
   @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   /* Respeita preferência de redução de movimento */
   @media (prefers-reduced-motion: reduce) {
-    .fadeInUp,
-    .fadeInFast,
-    .tab-fade-enter-active,
-    .tab-fade-leave-active,
-    .pulse-soft,
-    .slide-up {
+    .fadeInUp, .fadeInFast, .tab-fade-enter-active, .tab-fade-leave-active, .pulse-soft, .slide-up {
       animation: none !important;
       transition: none !important;
     }
@@ -153,8 +128,7 @@
 
 /* Transições do Toast */
 @layer components {
-  .toast-enter-active,
-  .toast-leave-active {
+  .toast-enter-active, .toast-leave-active {
     transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
 

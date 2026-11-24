@@ -407,6 +407,70 @@ export function getAvailableProducts(productList = products) {
  * @param {Product[]} [productList=products] - Lista base de produtos
  * @returns {Product | undefined}
  */
+
+/**
+ * Regras obrigatórias de encomendas (Dona Ca Doceria)
+ */
+export const REGRAS = {
+  antecedenciaMinimaDias: 5,
+  entradaPercentual: 50,
+  formasPagamento: ['Pix', 'Dinheiro', 'Cartão'],
+  instrucoes: [
+    'Nossos bolos têm 10 cm de altura, com 2 camadas de recheio e 3 discos de massa.',
+    'O número de fatias pode variar de acordo com a espessura que for cortada.',
+    'Não nos responsabilizamos por acidentes depois da entrega do bolo.',
+    'Em caso de desistência da encomenda 24 horas antes da entrega, não haverá devolução do valor de 50% pago.',
+  ],
+}
+
+/**
+ * Linhas de bolo (Tradicional vs Premium)
+ */
+export const LINHAS = [
+  { chave: 'tradicional', label: 'Linha Tradicional', descricao: 'Sabor clássico da casa', cor: 'brand-rose' },
+  { chave: 'premium', label: 'Linha Premium', descricao: 'Ingredientes nobres e decoração especial', cor: 'brand-berry' },
+]
+
+/**
+ * Tamanhos de bolo (somente letras, sem Kg)
+ */
+export const TAMANHOS = [
+  { chave: 'P', label: 'P', serve: 'até 8 pessoas', precoMultiplicador: 1.0 },
+  { chave: 'M', label: 'M', serve: 'até 15 pessoas', precoMultiplicador: 1.4 },
+  { chave: 'G', label: 'G', serve: 'até 25 pessoas', precoMultiplicador: 1.9 },
+  { chave: 'GG', label: 'GG', serve: 'até 40 pessoas', precoMultiplicador: 2.6 },
+]
+
+/**
+ * Massas disponíveis
+ */
+export const MASSAS = [
+  { chave: 'baunilha', label: 'Branca / Baunilha', precoAdicional: 0 },
+  { chave: 'chocolate', label: 'Chocolate', precoAdicional: 0 },
+  { chave: 'redvelvet', label: 'Red Velvet', precoAdicional: 5 },
+]
+
+/**
+ * Recheios (até 2 sabores)
+ */
+export const RECHEIOS = [
+  { chave: 'brigadeiro', label: 'Brigadeiro Belga', precoAdicional: 3 },
+  { chave: 'doce_leite', label: 'Doce de Leite', precoAdicional: 2 },
+  { chave: 'morango', label: 'Morango Fresco', precoAdicional: 4 },
+  { chave: 'pistache', label: 'Pistache', precoAdicional: 6 },
+  { chave: 'ninho', label: 'Ninho', precoAdicional: 5 },
+  { chave: 'prestigio', label: 'Prestígio', precoAdicional: 5 },
+]
+
+/**
+ * Coberturas / Acabamento
+ */
+export const COBERTURAS = [
+  { chave: 'chantininho', label: 'Chantininho liso', precoAdicional: 0 },
+  { chave: 'espatulado', label: 'Espatulado', precoAdicional: 15 },
+  { chave: 'ganache', label: 'Ganache', precoAdicional: 20 },
+]
+
 export function getProductById(id, productList = products) {
   return productList.find(p => p.id === id)
 }
