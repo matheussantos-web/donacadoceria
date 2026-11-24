@@ -105,105 +105,89 @@
             Acompanhe o desempenho do seu atelier em um piscar de olhos.
           </p>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 fadeInUp">
-            <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-rose-900/5 hover:-translate-y-0.5 transition-all duration-300 group">
+          <!-- 4 Cards de Visão Rápida (KPIs financeiros) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 fadeInUp">
+            <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm group">
               <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Package class="w-5 h-5 text-brand-primary" />
+                <div class="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center">
+                  <Wallet class="w-5 h-5 text-brand-primary" />
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-primary/10 text-brand-primary">
+                  Entradas
+                </span>
+              </div>
+              <p class="text-xs font-medium text-brand-text-muted uppercase tracking-wider mb-1">
+                Receitas no Mês
+              </p>
+              <p class="font-display font-bold text-2xl text-brand-text-primary tabular-nums">
+                {{ formatPrice(monthEntries) }}
+              </p>
+              <p class="text-xs text-brand-text-muted mt-1">
+                {{ monthTransactions.filter((t) => t.type === 'entrada').length }} lançamento(s)
+              </p>
+            </div>
+            <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm group">
+              <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
+                  <AlertTriangle class="w-5 h-5 text-rose-600" />
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
+                  Saídas
+                </span>
+              </div>
+              <p class="text-xs font-medium text-brand-text-muted uppercase tracking-wider mb-1">
+                Despesas no Mês
+              </p>
+              <p class="font-display font-bold text-2xl text-rose-600 tabular-nums">
+                {{ formatPrice(monthExits) }}
+              </p>
+              <p class="text-xs text-brand-text-muted mt-1">
+                {{ monthTransactions.filter((t) => t.type === 'saida').length }} lançamento(s)
+              </p>
+            </div>
+            <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm group">
+              <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <GitBranch class="w-5 h-5 text-emerald-600" />
                 </div>
                 <span
                   class="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                  :class="
-                    lowStockCount > 0
-                      ? 'bg-rose-100 text-rose-700'
-                      : 'bg-green-100 text-green-700'
-                  "
-                >
-                  {{ lowStockCount > 0 ? 'Atenção' : 'OK' }}
-                </span>
-              </div>
-              <p class="text-xs font-medium text-brand-text-muted uppercase tracking-wider mb-1">
-                Total de Insumos
-              </p>
-              <p class="font-display font-bold text-2xl text-brand-text-primary tabular-nums">
-                {{ ingredients.length }}
-              </p>
-            </div>
-            <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-rose-900/5 hover:-translate-y-0.5 transition-all duration-300 group fadeInFast">
-              <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <AlertTriangle class="w-5 h-5 text-amber-600" />
-                </div>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
-                  Baixo
-                </span>
-              </div>
-              <p class="text-xs font-medium text-brand-text-muted uppercase tracking-wider mb-1">
-                Alertas de Estoque
-              </p>
-              <p class="font-display font-bold text-2xl text-red-600 tabular-nums">
-                {{ lowStockCount }}
-              </p>
-            </div>
-            <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-rose-900/5 hover:-translate-y-0.5 transition-all duration-300 group">
-              <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 rounded-xl bg-brand-secondary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <BookOpen class="w-5 h-5 text-brand-secondary" />
-                </div>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600">
-                  Ativas
-                </span>
-              </div>
-              <p class="text-xs font-medium text-brand-text-muted uppercase tracking-wider mb-1">
-                Receitas Cadastradas
-              </p>
-              <p class="font-display font-bold text-2xl text-brand-text-primary tabular-nums">
-                {{ recipes.length }}
-              </p>
-            </div>
-            <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-rose-900/5 hover:-translate-y-0.5 transition-all duration-300 group">
-              <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Tag class="w-5 h-5 text-purple-600" />
-                </div>
-                <span
-                  v-if="productsNeedingPriceReview.length > 0"
-                  class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 pulse-soft"
-                >
-                  Revisar
-                </span>
-              </div>
-              <p class="text-xs font-medium text-brand-text-muted uppercase tracking-wider mb-1">
-                Produtos Precificados
-              </p>
-              <p class="font-display font-bold text-2xl text-brand-text-primary tabular-nums">
-                {{ pricedProducts.length }}
-              </p>
-            </div>
-            <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:shadow-rose-900/5 hover:-translate-y-0.5 transition-all duration-300 group">
-              <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Wallet class="w-5 h-5 text-emerald-600" />
-                </div>
-                <span
-                  class="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                  :class="
-                    monthBalance >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                  "
+                  :class="monthBalance >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'"
                 >
                   {{ monthBalance >= 0 ? 'Positivo' : 'Negativo' }}
                 </span>
               </div>
               <p class="text-xs font-medium text-brand-text-muted uppercase tracking-wider mb-1">
-                Saldo Financeiro (mês)
+                Saldo / Lucro do Mês
               </p>
-              <p class="font-display font-bold text-2xl"
-                 :class="monthBalance >= 0 ? 'text-emerald-700' : 'text-rose-700'"
-              >
+              <p class="font-display font-bold text-2xl tabular-nums"
+                 :class="monthBalance >= 0 ? 'text-emerald-700' : 'text-rose-700'">
                 {{ formatPrice(monthBalance) }}
               </p>
               <p class="text-xs text-brand-text-muted mt-1">
                 {{ formatPrice(monthEntries) }} entra · {{ formatPrice(monthExits) }} sai
+              </p>
+            </div>
+            <div class="bg-white/90 backdrop-blur-sm border border-rose-100/80 rounded-2xl p-5 shadow-sm group">
+              <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <Package class="w-5 h-5 text-amber-600" />
+                </div>
+                <span
+                  class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                  :class="lowStockCount > 0 || productsNeedingPriceReview.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'"
+                >
+                  {{ lowStockCount > 0 || productsNeedingPriceReview.length > 0 ? 'Atenção' : 'OK' }}
+                </span>
+              </div>
+              <p class="text-xs font-medium text-brand-text-muted uppercase tracking-wider mb-1">
+                Alertas de Estoque / Margem
+              </p>
+              <p class="font-display font-bold text-2xl text-brand-text-primary tabular-nums">
+                {{ lowStockCount + productsNeedingPriceReview.length }}
+              </p>
+              <p class="text-xs text-brand-text-muted mt-1">
+                {{ lowStockCount }} estoque baixo · {{ productsNeedingPriceReview.length }} margem defasada
               </p>
             </div>
           </div>
@@ -237,7 +221,10 @@
               <GitBranch class="w-5 h-5 text-brand-primary" />
               Fluxo do Atelier
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <p class="text-xs text-brand-text-muted mb-4">
+              Siga a ordem do dia: confira o estoque → calcule receitas → precifique → registre pedidos → acompanhe o financeiro.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-3">
               <div
                 v-for="step in atelierFlow"
                 :key="step.key"
@@ -248,10 +235,10 @@
                 </div>
                 <div
                   class="w-full h-1 bg-rose-100 absolute top-[46px] z-0"
-                  v-if="step.key !== 'venda'"
+                  v-if="step.key !== 'financeiro'"
                 ></div>
-                <div class="w-full max-w-[120px] text-center">
-                  <p class="font-medium text-sm text-brand-text-primary">
+                <div class="w-full max-w-[96px] text-center">
+                  <p class="font-medium text-sm text-brand-text-primary line-clamp-1">
                     {{ step.label }}
                   </p>
                   <p class="text-[10px] text-brand-text-muted font-medium mt-0.5">
@@ -454,11 +441,11 @@ const greeting = computed(() => {
 })
 
 const atelierFlow = [
-  { key: "nfce", number: "1", label: "Importar NFC-e", count: 0 },
-  { key: "estoque", number: "2", label: "Conferir Estoque", count: ingredients.value.length },
-  { key: "receitas", number: "3", label: "Calcular Receita", count: recipes.value.length },
-  { key: "precificacao", number: "4", label: "Precificar Produto", count: pricedProducts.value.length },
-  { key: "pedidos", number: "5", label: "Registrar Encomenda", count: upcomingOrders.value.length },
+  { key: "estoque", number: "1", label: "Estoque", count: ingredients.value.length },
+  { key: "receitas", number: "2", label: "Receitas", count: recipes.value.length },
+  { key: "precificacao", number: "3", label: "Precificação", count: pricedProducts.value.length },
+  { key: "pedidos", number: "4", label: "Pedidos", count: upcomingOrders.value.length },
+  { key: "financeiro", number: "5", label: "Financeiro", count: financialTransactions.value.length },
 ]
 
 onMounted(() => {

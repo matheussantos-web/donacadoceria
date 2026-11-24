@@ -21,10 +21,11 @@
 
     <!-- Lista de receitas -->
     <div class="bg-brand-surface border border-gray-100 rounded-xl p-6">
-      <div v-if="recipes.length === 0" class="text-center py-8 text-brand-text-muted">
-        <p>Nenhuma receita cadastrada.</p>
-        <button @click="openRecipeModal()" class="btn-primary mt-4 px-4 py-2">
-          Cadastrar primeira receita
+      <div v-if="recipes.length === 0" class="text-center py-12 text-brand-text-muted">
+        <p class="text-sm mb-4">Nenhuma receita cadastrada ainda.</p>
+        <p class="text-xs text-brand-text-muted mb-6">Cadastre suas receitas para calcular o custo de cada preparo.</p>
+        <button @click="openRecipeModal()" class="btn-primary px-6 py-2.5 text-sm font-medium">
+          <Plus class="w-4 h-4 mr-2" /> Cadastrar primeira receita
         </button>
       </div>
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -279,11 +280,20 @@
               </div>
 
               <!-- Custo total calculado -->
-              <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between">
-                <span class="font-medium text-brand-text-primary">Custo Total da Receita:</span>
-                <span class="font-display font-medium text-xl text-brand-text-primary">
-                  {{ formatPrice(recipeTotalCost) }}
-                </span>
+              <div class="bg-brand-primary/5 border border-brand-primary/20 rounded-xl p-4 mt-4">
+                <p class="text-xs font-medium text-brand-text-muted mb-3 uppercase tracking-wider">Resumo de custo</p>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-brand-text-muted">Custo total da receita:</span>
+                    <span class="font-medium text-brand-text-primary tabular-nums">{{ formatPrice(recipeTotalCost) }}</span>
+                  </div>
+                  <div class="flex justify-between border-t border-gray-200 pt-2">
+                    <span class="text-brand-text-muted">Custo por unidade de rendimento:</span>
+                    <span class="font-medium text-brand-text-primary tabular-nums">
+                      {{ formatPrice(recipeTotalCost / Math.max(1, Number(form.yieldQuantity || 1))) }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </form>

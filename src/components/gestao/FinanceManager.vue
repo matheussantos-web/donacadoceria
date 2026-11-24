@@ -30,7 +30,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
       <div class="bg-brand-surface border border-gray-100 rounded-xl p-6">
         <p class="text-xs text-brand-text-muted uppercase tracking-wider">Total de Entradas</p>
-        <p class="font-display font-medium text-2xl text-brand-primary">
+        <p class="font-display font-medium text-2xl text-brand-primary tabular-nums">
           {{ formatPrice(totalEntries) }}
         </p>
         <p class="text-xs text-brand-text-muted mt-1">
@@ -39,7 +39,7 @@
       </div>
       <div class="bg-brand-surface border border-gray-100 rounded-xl p-6">
         <p class="text-xs text-brand-text-muted uppercase tracking-wider">Total de Saídas</p>
-        <p class="font-display font-medium text-2xl text-red-600">
+        <p class="font-display font-medium text-2xl text-red-600 tabular-nums">
           {{ formatPrice(totalExits) }}
         </p>
         <p class="text-xs text-brand-text-muted mt-1">
@@ -48,7 +48,7 @@
       </div>
       <div class="bg-brand-surface border border-gray-100 rounded-xl p-6">
         <p class="text-xs text-brand-text-muted uppercase tracking-wider">Saldo / Lucro Líquido</p>
-        <p class="font-display font-medium text-2xl"
+        <p class="font-display font-medium text-2xl tabular-nums"
            :class="balance >= 0 ? 'text-brand-primary' : 'text-red-600'">
           {{ formatPrice(balance) }}
         </p>
@@ -123,8 +123,9 @@
 
     <!-- Extrato de lançamentos -->
     <div v-if="filteredTransactions.length === 0" class="text-center py-12 text-brand-text-muted">
-      <p>Nenhum lançamento encontrado.</p>
-      <button v-if="periodFilter !== 'todos' || typeFilter !== 'todas'" @click="resetFilters" class="btn-primary mt-4 px-4 py-2">
+      <p class="text-sm mb-4">Nenhum lançamento encontrado.</p>
+      <p class="text-xs text-brand-text-muted mb-6">Registre suas entradas e saídas para acompanhar o fluxo de caixa.</p>
+      <button v-if="periodFilter !== 'todos' || typeFilter !== 'todas'" @click="resetFilters" class="btn-primary px-6 py-2.5 text-sm font-medium">
         Limpar filtros
       </button>
     </div>

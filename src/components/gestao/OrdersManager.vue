@@ -44,8 +44,9 @@
 
     <!-- Lista de pedidos (cards mobile-first) -->
     <div v-if="filteredOrders.length === 0" class="text-center py-12 text-brand-text-muted">
-      <p>Nenhum pedido encontrado.</p>
-      <button v-if="searchQuery || statusFilter !== 'todos'" @click="resetFilters" class="btn-primary mt-4 px-4 py-2">
+      <p class="text-sm mb-4">Nenhum pedido encontrado.</p>
+      <p class="text-xs text-brand-text-muted mb-6">Cadastre suas encomendas para controlar pagamentos e estoque.</p>
+      <button v-if="searchQuery || statusFilter !== 'todos'" @click="resetFilters" class="btn-primary px-6 py-2.5 text-sm font-medium">
         Limpar filtros
       </button>
     </div>
@@ -92,7 +93,7 @@
           </div>
           <div class="flex justify-between text-brand-text-muted">
             <span>Total</span>
-            <span class="font-medium text-brand-text-primary">
+            <span class="font-medium text-brand-text-primary tabular-nums">
               {{ formatPrice(order.totalAmount) }}
             </span>
           </div>
@@ -103,7 +104,7 @@
           <div class="flex justify-between text-brand-text-muted">
             <span>Saldo a receber</span>
             <span
-              class="font-medium"
+              class="font-medium tabular-nums"
               :class="order.totalAmount > order.depositPaid ? 'text-red-600' : 'text-brand-primary'"
             >
               {{ formatPrice(Math.max(0, order.totalAmount - order.depositPaid)) }}

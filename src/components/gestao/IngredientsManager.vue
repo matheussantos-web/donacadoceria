@@ -79,10 +79,11 @@
         </button>
       </div>
 
-      <div v-if="filteredIngredients.length === 0" class="text-center py-8 text-brand-text-muted">
-        <p>Nenhum insumo cadastrado.</p>
-        <button @click="openIngredientModal()" class="btn-primary mt-4 px-4 py-2">
-          Cadastrar primeiro insumo
+      <div v-if="filteredIngredients.length === 0" class="text-center py-12 text-brand-text-muted">
+        <p class="text-sm mb-4">Nenhum insumo cadastrado ainda.</p>
+        <p class="text-xs text-brand-text-muted mb-6">Cadastre seus insumos para começar a calcular o custo das receitas.</p>
+        <button @click="openIngredientModal()" class="btn-primary px-6 py-2.5 text-sm font-medium">
+          <Plus class="w-4 h-4 mr-2" /> Cadastrar primeiro insumo
         </button>
       </div>
 

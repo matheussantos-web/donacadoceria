@@ -21,10 +21,11 @@
 
     <!-- Lista de produtos precificados -->
     <div class="bg-brand-surface border border-gray-100 rounded-xl p-6">
-      <div v-if="products.length === 0" class="text-center py-8 text-brand-text-muted">
-        <p>Nenhum produto precificado ainda.</p>
-        <button @click="openProductModal()" class="btn-primary mt-4 px-4 py-2">
-          Cadastrar primeiro produto
+      <div v-if="products.length === 0" class="text-center py-12 text-brand-text-muted">
+        <p class="text-sm mb-4">Nenhum produto precificado ainda.</p>
+        <p class="text-xs text-brand-text-muted mb-6">Cadastre seus produtos para calcular custo de producao e margem de lucro.</p>
+        <button @click="openProductModal()" class="btn-primary px-6 py-2.5 text-sm font-medium">
+          <Plus class="w-4 h-4 mr-2" /> Cadastrar primeiro produto
         </button>
       </div>
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
