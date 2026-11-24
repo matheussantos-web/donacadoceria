@@ -39,28 +39,28 @@
         </div>
 
         <!-- Barra de Ações em Lote -->
-        <div class="bg-brand-bg border border-gray-100 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div class="text-xs text-brand-text-muted font-medium uppercase tracking-wider">
+        <div class="bg-brand-bg border border-gray-100 rounded-lg p-3 mb-4">
+          <div class="text-xs text-brand-text-muted font-medium uppercase tracking-wider mb-3">
             Ações em lote
           </div>
-          <div class="flex gap-2">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               @click="batchLinkAllNew"
               :disabled="noUnlinkedItems"
-              class="flex-1 btn-primary py-2 text-sm font-medium"
+              class="btn-primary py-2 text-sm font-medium text-center"
             >
-              Cadastrar todos sem vínculo como novos
+              Cadastrar novos como insumos
             </button>
             <button
               @click="batchIgnoreAllUnlinked"
               :disabled="noUnlinkedItems"
-              class="flex-1 py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded border border-gray-200"
+              class="py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded border border-gray-200 text-center"
             >
-              Ignorar todos sem vínculo
+              Ignorar sem vínculo
             </button>
             <button
               @click="resetSuggestions"
-              class="px-3 py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded border border-gray-200"
+              class="px-3 py-2 text-sm font-medium text-brand-text-muted hover:bg-gray-100 rounded border border-gray-200 text-center"
             >
               Resetar sugestões
             </button>
@@ -75,42 +75,56 @@
           </span>
         </div>
 
-        <!-- Lista de itens -->
-        <div class="overflow-y-auto mb-6">
-          <table class="w-full text-sm divide-y divide-gray-100">
-            <thead>
-              <tr class="text-left text-brand-text-muted border-b border-gray-100">
-                <th class="pb-2 w-1/3">Item da Nota</th>
-                <th class="pb-2 text-right w-1/6">Qtd</th>
-                <th class="pb-2 text-right w-1/6">V. Unit.</th>
-                <th class="pb-2 text-right w-1/6">V. Total</th>
-                <th class="pb-2 w-1/3">Vincular a Insumo</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in nfceItems" :key="index" class="group">
-                <td class="pb-3">
-                  <div class="font-medium text-brand-text-primary">{{ item.raw_description }}</div>
-                  <div class="text-xs text-brand-text-muted mt-0.5">
-                    {{ item.ignoreItem ? 'Item será ignorado' : '' }}
-                  </div>
-                </td>
-                <td class="pb-3 text-right">{{ formatNumber(item.quantity) }}</td>
-                <td class="pb-3 text-right">{{ formatPrice(item.unit_price) }}</td>
-                <td class="pb-3 text-right">{{ formatPrice(item.total_price) }}</td>
-                <td class="pb-3">
-                  <!-- Checkbox ignorar -->
-                  <div class="flex items-center gap-2 mb-2">
-                    <input
-                      type="checkbox"
-                      v-model="item.ignoreItem"
-                      class="rounded text-brand-primary focus:ring-brand-primary"
-                    />
-                    <span class="text-xs text-brand-text-muted">Ignorar este item</span>
-                  </div>
+        <!-- Lista de itens (cards verticais, mobile-first) -->
+        <div class="space-y-3">
+          <div
+            v-for="(item, index) in nfceItems"
+            :key="index"
+            class="rounded-xl border border-gray-200 bg-white p-4 space-y-3 shadow-sm"
+          >
+            <!-- Topo do card: nome, resumo de preços e checkbox ignorar -->
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-sm text-brand-text-primary break-words">
+                  {{ item.raw_description }}
+                </div>
+                <div class="text-xs text-brand-text-muted mt-1 whitespace-nowrap">
+                  Qtd: {{ formatNumber(item.quantity) }} ·
+                  Unit: R$ {{ formatPrice(item.unit_price) }} ·
+                  Total: R$ {{ formatPrice(item.total_price) }}
+                </div>
+              </div>
+              <div class="flex items-center gap-2 mt-2 sm:mt-0">
+                <input
+                  type="checkbox"
+                  v-model="item.ignoreItem"
+                  class="rounded text-brand-primary focus:ring-brand-primary"
+                />
+                <span class="text-xs text-brand-text-muted whitespace-nowrap">Ignorar este item</span>
+              </div>
+            </div>
 
-                  <!-- Se selecionou "Cadastrar novo", mostra campos -->
-                  <div v-if="item.newIngredientMode" class="space-y-2">
+            <!-- Corpo do card (apenas quando não ignorado) -->
+            <div v-if="!item.ignoreItem" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Modo: criar novo insumo -->
+              <div
+                v-if="item.newIngredientMode"
+                class="col-span-full space-y-2 sm:col-span-2"
+              >
+                <label class="block text-xs font-medium text-brand-text-muted">
+                  Nome do novo insumo
+                </label>
+                <input
+                  v-model="item.newIngredientName"
+                  type="text"
+                  placeholder="Nome do novo insumo"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs font-medium text-brand-text-muted">
+                      Categoria
+                    </label>
                     <select
                       v-model="item.newCategory"
                       class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
@@ -122,65 +136,80 @@
                       <option value="Embalagens">Embalagens</option>
                       <option value="Outros">Outros</option>
                     </select>
-                    <div class="flex gap-2">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-brand-text-muted">
+                      Qtd. por embalagem / medida
+                    </label>
+                    <div class="flex items-end gap-2">
                       <input
                         v-model.number="item.newPackageSize"
                         type="number"
                         step="0.01"
-                        placeholder="Tamanho pacote"
+                        placeholder="Tamanho"
                         class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
                       />
                       <select
                         v-model="item.newBaseUnit"
                         class="px-3 py-2 border border-gray-200 rounded-lg text-sm text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
                       >
-                        <option value="g">g</option>
-                        <option value="ml">ml</option>
                         <option value="un">un</option>
+                        <option value="g">g</option>
+                        <option value="kg">kg</option>
+                        <option value="ml">ml</option>
+                        <option value="l">l</option>
                       </select>
                     </div>
-                    <input
-                      v-model="item.newIngredientName"
-                      type="text"
-                      placeholder="Nome do novo insumo"
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
-                    />
-                    <button
-                      @click="item.newIngredientMode = false"
-                      class="text-xs text-brand-text-muted underline hover:text-brand-primary"
-                    >
-                      Voltar à seleção existente
-                    </button>
                   </div>
+                </div>
+                <button
+                  @click="item.newIngredientMode = false"
+                  class="text-xs text-brand-text-muted underline hover:text-brand-primary"
+                >
+                  Voltar à seleção existente
+                </button>
+              </div>
 
-                  <!-- Seleção de insumo existente ou novo -->
-                  <div v-else>
-                    <select
-                      v-model="item.selectedIngredientId"
-                      @change="item.newIngredientMode = false"
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
-                    >
-                      <option value="" class="text-brand-text-muted">Selecionar insumo existente...</option>
-                      <option
-                        v-for="(ing, i) in availableIngredients"
-                        :key="i"
-                        :value="ing.id"
-                      >
-                        {{ ing.name }} ({{ ing.category }}) · R$ {{ formatPrice(ing.costPerBaseUnit) }}/{{ ing.baseUnit }}
-                      </option>
-                      <option value="__NEW__" class="text-brand-primary">+ Cadastrar como novo insumo</option>
-                    </select>
-                    <div
-                      v-if="item.selectedIngredientId && !item.newIngredientMode && availableIngredients.find(i => i.id === item.selectedIngredientId)"
-                      class="text-xs text-brand-text-muted mt-1"
-                    >
-                      Custo atual: R$ {{ formatPrice(availableIngredients.find(i => i.id === item.selectedIngredientId).costPerBaseUnit) }}/{{ availableIngredients.find(i => i.id === item.selectedIngredientId).baseUnit }}
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+              <!-- Modo: vincular a insumo cadastrado -->
+              <div v-else class="col-span-full space-y-2 sm:col-span-2">
+                <label class="block text-xs font-medium text-brand-text-muted">
+                  Vincular a insumo cadastrado
+                </label>
+                <select
+                  v-model="item.selectedIngredientId"
+                  @change="item.newIngredientMode = false"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-brand-text-primary bg-brand-bg focus:ring-2 focus:ring-brand-primary focus:border-brand-primary outline-none"
+                >
+                  <option value="" class="text-brand-text-muted">
+                    Selecionar insumo existente...
+                  </option>
+                  <option
+                    v-for="(ing, i) in availableIngredients"
+                    :key="i"
+                    :value="ing.id"
+                  >
+                    {{ ing.name }} ({{ ing.category }}) ·
+                    R$ {{ formatPrice(ing.costPerBaseUnit) }}/{{ ing.baseUnit }}
+                  </option>
+                  <option value="__NEW__" class="text-brand-primary">
+                    + Cadastrar como novo insumo
+                  </option>
+                </select>
+                <div
+                  v-if="item.selectedIngredientId && !item.newIngredientMode && availableIngredients.find(i => i.id === item.selectedIngredientId)"
+                  class="text-xs text-brand-text-muted mt-1"
+                >
+                  Custo atual: R$ {{ formatPrice(availableIngredients.find(i => i.id === item.selectedIngredientId).costPerBaseUnit) }}/{{ availableIngredients.find(i => i.id === item.selectedIngredientId).baseUnit }}
+                </div>
+                <p
+                  class="text-xs text-brand-primary font-medium underline hover:text-brand-text-primary cursor-pointer"
+                  @click="item.newIngredientMode = true"
+                >
+                  Criar novo insumo
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
