@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useMotion } from '@vueuse/motion'
 import { formatPrice } from '@/data/products'
 import { useWhatsAppStatus } from '@/composables/useWhatsAppLink'
 import { Image, AlertTriangle } from 'lucide-vue-next'
@@ -20,6 +21,12 @@ const whatsappStatus = useWhatsAppStatus()
 
 const currentImageIndex = ref(0)
 const showCustomizer = ref(false)
+const motionProps = () => ({
+  initial: { y: 20, opacity: 0 },
+  enter: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 30 }},
+  hover: { y: -5, scale: 1.02 },
+  tap: { scale: 0.98 },
+})
 
 const productImages = computed(() => {
   const imgs = props.product.images || []
@@ -44,7 +51,7 @@ const handleImageError = (event) => {
 </script>
 
 <template>
-  <article class="card group relative flex flex-col h-full bg-brand-surface border-brand-primary/10 shadow-sm hover:shadow-xl transition-shadow duration-300">
+  <article v-motion="motionProps" class="card group relative flex flex-col h-full bg-brand-surface border-brand-primary/10 shadow-sm hover:shadow-xl transition-shadow duration-300">
     <!-- Image container with aspect ratio -->
     <div class="relative aspect-[4/5] overflow-hidden bg-gray-100">
       <!-- Image carousel when multiple images -->
@@ -144,7 +151,7 @@ const handleImageError = (event) => {
         </span>
         <button
           type="button"
-          class="w-full btn-primary text-sm py-3 whitespace-nowrap text-center active:scale-95 transition-transform duration-100"
+          class="w-full btn-primary text-sm py-3 whitespace-nowrap text-center" v-motion="{ initial: { scale: 1 }, tap: { scale: 0.95 } }"
           :disabled="!product.available || !whatsappStatus.isConfigured"
           @click="showCustomizer = true"
         >

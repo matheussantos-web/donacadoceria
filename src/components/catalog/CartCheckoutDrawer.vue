@@ -280,6 +280,7 @@ import { useCart } from '@/composables/useCart'
 import { formatPrice, REGRAS } from '@/data/products'
 import { getWhatsAppUrl, isWhatsAppConfigured } from '@/config/store'
 import { X, AlertTriangle } from 'lucide-vue-next'
+import confetti from 'canvas-confetti'
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -349,6 +350,14 @@ async function sendToWhatsApp() {
 
   const url = getWhatsAppUrl(message)
   window.open(url, '_blank', 'noopener,noreferrer')
+
+  // Confetti de celebração nas cores da marca
+  confetti({
+    particleCount: 150,
+    spread: 90,
+    origin: { y: 0.4 },
+    colors: ['#C98291', '#8E5365', '#B88D91', '#F8F0E9'],
+  })
 
   // Limpa sacola após enviar
   clearCart()

@@ -1,6 +1,7 @@
 <script setup>
 import { categories } from '@/data/products'
 import { computed } from 'vue'
+import { useMotion } from '@vueuse/motion'
 
 const props = defineProps({
   categories: {
@@ -40,6 +41,13 @@ const normalizedCategories = computed(() =>
       }
     })
 )
+
+const filterMotionProps = () => ({
+  initial: { scale: 0.8, opacity: 0 },
+  enter: { scale: 1, opacity: 1, transition: { type: 'spring', stiffness: 400, damping: 25 }},
+  hover: { scale: 1.05 },
+  tap: { scale: 0.95 },
+})
 </script>
 
 <template>
@@ -49,6 +57,7 @@ const normalizedCategories = computed(() =>
         <!-- "Todas" button -->
                 <button
                   type="button"
+                  v-motion="filterMotionProps"
                   :class="[
                     'flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full shrink-0 whitespace-nowrap transition-colors duration-200',
                     'focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2',
@@ -67,6 +76,7 @@ const normalizedCategories = computed(() =>
                   <button
                     v-if="category.id !== 'Todas'"
                     type="button"
+                    v-motion="filterMotionProps"
                   :class="[
                     'flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full shrink-0 whitespace-nowrap transition-all duration-200',
                     'focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2',

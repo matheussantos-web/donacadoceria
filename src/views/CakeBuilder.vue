@@ -243,6 +243,7 @@
 </template>
 <script setup>
 import { ref, computed } from 'vue'
+import confetti from 'canvas-confetti'
 import Cake3DPreview from '@/components/Cake3DPreview.vue'
 import {
   TAMANHOS, LINHAS, MASSAS, RECHEIOS, COBERTURAS, REGRAS,
@@ -315,5 +316,12 @@ function adicionarSacolaBolo() {
   }
   window.dispatchEvent(new CustomEvent('donaca:add-to-cart', { detail: item }))
   alert('Bolo adicionado à sacola! Revise seu pedido no ícone da sacola.')
+  // Confetti de celebração nas cores da marca
+  confetti({
+    particleCount: 120,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: ['#C98291', '#8E5365', '#B88D91', '#F8F0E9'],
+  })
 }
 </script>

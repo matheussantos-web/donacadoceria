@@ -12,15 +12,15 @@
         v-for="t in toasts"
         :key="t.id"
         @click.self="dismiss(t.id)"
-        class="pointer-events-auto flex items-start gap-3 w-full max-w-md px-4 py-3.5 rounded-2xl border shadow-2xl shadow-rose-900/10 transition-all duration-300 transform hover:scale-105 cursor-pointer"
+        class="pointer-events-auto flex items-start gap-3 w-full max-w-md px-4 py-3.5 rounded-2xl border border-brand-mauve/30 bg-brand-creme/90 backdrop-blur-md shadow-lg shadow-brand-rose/10 transition-all duration-300 transform hover:scale-105 cursor-pointer"
         :class="
           t.type === 'success'
-            ? 'bg-white border-green-100 text-green-900 ring-1 ring-green-50/20'
+            ? 'bg-brand-creme text-brand-cacau border-green-100 ring-1 ring-green-50/20'
             : t.type === 'error'
-            ? 'bg-white border-rose-100 text-rose-900 ring-1 ring-rose-50/20'
+            ? 'bg-brand-creme text-brand-cacau border-rose-100 ring-1 ring-rose-50/20'
             : t.type === 'warning'
-            ? 'bg-white border-amber-100 text-amber-900 ring-1 ring-amber-50/20'
-            : 'bg-white border-rose-100 text-brand-text-primary ring-1 ring-rose-50/20'
+            ? 'bg-brand-creme text-brand-cacau border-amber-100 ring-1 ring-amber-50/20'
+            : 'bg-brand-creme text-brand-cacau border-brand-mauve/50 ring-1 ring-brand-mauve/30'
         "
       >
         <!-- Ícone -->
@@ -28,12 +28,12 @@
           <span
             :class="
               t.type === 'success'
-                ? 'text-green-500'
+                ? 'text-brand-berry'
                 : t.type === 'error'
-                ? 'text-rose-500'
+                ? 'text-brand-berry'
                 : t.type === 'warning'
-                ? 'text-amber-500'
-                : 'text-brand-primary'
+                ? 'text-brand-berry'
+                : 'text-brand-rose'
             "
             class="text-xl"
             v-html="toastIcon(t.type)"

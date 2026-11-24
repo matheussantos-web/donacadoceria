@@ -21,6 +21,8 @@ const currentLayout = computed(() => {
 
 <template>
   <component :is="currentLayout">
-    <router-view />
+    <Transition name="page-fade" mode="out-in">
+      <router-view />
+    </Transition>
   </component>
 </template>

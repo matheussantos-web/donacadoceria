@@ -12,6 +12,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import * as THREE from 'three'
+import { gsap } from 'gsap'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 const props = defineProps({
@@ -25,7 +26,7 @@ const props = defineProps({
 
 const containerRef = ref(null)
 let scene, camera, renderer, controls
-let boloGrupo, coberturaMesh
+let boloGrupo, camadasMassa, camadasRecheio, coberturaMesh
 let isDragging = false
 let targetRotation = 0
 let currentRotation = 0
@@ -80,18 +81,20 @@ function init() {
   boloGrupo = new THREE.Group()
   boloGrupo.position.y = 0.16
   scene.add(boloGrupo)
+  camadasMassa = []
+  camadasRecheio = []
+  coberturaMesh = new THREE.Group()
+  boloGrupo.add(coberturaMesh)
   criarBolo()
   animate()
 }
 function criarBolo() {
-  if (boloGrupo) {
-    while (boloGrupo.children.length > 0) {
-      boloGrupo.remove(boloGrupo.children[0])
-    }
-  }
-  if (coberturaMesh && scene) {
-    scene.remove(coberturaMesh)
-    coberturaMesh = null
+  camadasMassa.forEach((m) => boloGrupo.remove(m))
+  camadasRecheio.forEach((r) => boloGrupo.remove(r))
+  camadasMassa = []
+  camadasRecheio = []
+  while (coberturaMesh.children.length > 0) {
+    coberturaMesh.remove(coberturaMesh.children[0])
   }
   const escala = props.tamanho?.precoMultiplicador || 1.4
   const raioBase = 1.1 * Math.sqrt(escala)
@@ -102,27 +105,22 @@ function criarBolo() {
   const recheiosSelecionados = props.recheios || []
   let y = discoAltura / 2
   for (let i = 0; i < 3; i++) {
-    const disco = new THREE.Mesh(
-      new THREE.CylinderGeometry(raioBase, raioBase, discoAltura, 32),
-      new THREE.MeshStandardMaterial({ color: corMassa, roughness: 0.9 })
-    )
+    const disco = new THREE.Mesh(new THREE.CylinderGeometry(raioBase, raioBase, discoAltura, 32), new THREE.MeshStandardMaterial({ color: corMassa, roughness: 0.9 }))
     disco.position.y = y
     boloGrupo.add(disco)
+    camadasMassa.push(disco)
     y += discoAltura
     if (i < 2) {
       const corRecheio = CORES.recheio[recheiosSelecionados[i]] || '#FFF8EB'
-      const recheio = new THREE.Mesh(
-        new THREE.CylinderGeometry(raioBase * 0.9, raioBase * 0.9, recheioAltura, 32),
-        new THREE.MeshStandardMaterial({ color: corRecheio, roughness: 0.8 })
-      )
+      const recheio = new THREE.Mesh(new THREE.CylinderGeometry(raioBase * 0.9, raioBase * 0.9, recheioAltura, 32), new THREE.MeshStandardMaterial({ color: corRecheio, roughness: 0.8 }))
       recheio.position.y = y + recheioAltura / 2
       boloGrupo.add(recheio)
+      camadasRecheio.push(recheio)
       y += recheioAltura
     }
   }
   const ehNaked = props.cobertura === 'naked'
   const ehFechado = !ehNaked
-  coberturaMesh = new THREE.Group()
   const topoGeo = new THREE.CylinderGeometry(raioBase * 1.05, raioBase * 1.05, 0.15, 32)
   const topoMat = new THREE.MeshStandardMaterial({ color: corCobertura, roughness: 0.6 })
   const topo = new THREE.Mesh(topoGeo, topoMat)
@@ -137,7 +135,6 @@ function criarBolo() {
     coberturaMesh.add(lateral)
   }
   coberturaMesh.position.y = 0.16
-  boloGrupo.add(coberturaMesh)
   if (props.fraseTopo) {
     const coracaoGeo = new THREE.SphereGeometry(0.08, 8, 8)
     const coracaoMat = new THREE.MeshStandardMaterial({ color: '#C98291' })
@@ -147,6 +144,62 @@ function criarBolo() {
       c.position.set(Math.cos(ang) * raioBase * 0.9, y + 0.2, Math.sin(ang) * raioBase * 0.9)
       boloGrupo.add(c)
     }
+  }
+  animarMontagemCamadas(raioBase, discoAltura, recheioAltura, corMassa, corCobertura, recheiosSelecionados)
+}
+function animarMontagemCamadas(raioBase, discoAltura, recheioAltura, corMassa, corCobertura, recheiosSelecionados) {
+  camadasMassa.forEach((disco, i) => {
+    disco.scale.set(0, 0, 0)
+    disco.rotation.x = 0.5
+    gsap.to(disco.scale, { x: 1, y: 1, z: 1, duration: 0.6, delay: i * 0.15, ease: 'back.out(1.7)' })
+    gsap.to(disco.rotation, { x: 0, duration: 0.6, delay: i * 0.15, ease: 'power2.out' })
+    gsap.to(disco.material.color, {
+      r: parseInt(corMassa.slice(1, 3), 16) / 255,
+      g: parseInt(corMassa.slice(3, 5), 16) / 255,
+      b: parseInt(corMassa.slice(5, 7), 16) / 255,
+      duration: 0.8, delay: i * 0.15,
+    })
+  })
+  camadasRecheio.forEach((recheio, i) => {
+    recheio.scale.set(0, 0, 0)
+    recheio.position.y = (i * 0.8) + 0.55 + recheioAltura / 2
+    gsap.to(recheio.scale, { x: 1, y: 1, z: 1, duration: 0.5, delay: 0.4 + i * 0.15, ease: 'back.out(1.7)' })
+    gsap.to(recheio.material.color, {
+      r: parseInt((CORES.recheio[recheiosSelecionados[i]] || '#FFF8EB').slice(1, 3), 16) / 255,
+      g: parseInt((CORES.recheio[recheiosSelecionados[i]] || '#FFF8EB').slice(3, 5), 16) / 255,
+      b: parseInt((CORES.recheio[recheiosSelecionados[i]] || '#FFF8EB').slice(5, 7), 16) / 255,
+      duration: 0.6, delay: 0.4 + i * 0.15,
+    })
+  })
+  if (coberturaMesh) {
+    coberturaMesh.scale.set(0, 0, 0)
+    coberturaMesh.position.y = 0.16 - 2
+    gsap.to(coberturaMesh.scale, { x: 1, y: 1, z: 1, duration: 0.8, delay: 0.8, ease: 'back.out(1.7)' })
+    gsap.to(coberturaMesh.position, { y: 0.16, duration: 0.8, delay: 0.8, ease: 'power2.out' })
+    gsap.to(coberturaMesh.children[0]?.material.color || new THREE.Color(corCobertura), {
+      r: parseInt(corCobertura.slice(1, 3), 16) / 255,
+      g: parseInt(corCobertura.slice(3, 5), 16) / 255,
+      b: parseInt(corCobertura.slice(5, 7), 16) / 255,
+      duration: 0.8, delay: 0.8,
+    })
+  }
+  if (props.fraseTopo) {
+    coracoesFlutuantes(raioBase)
+  }
+}
+
+function coracoesFlutuantes(raioBase) {
+  for (let i = 0; i < 6; i++) {
+    const coracaoGeo = new THREE.SphereGeometry(0.08, 8, 8)
+    const coracaoMat = new THREE.MeshStandardMaterial({ color: '#C98291' })
+    const c = new THREE.Mesh(coracaoGeo, coracaoMat)
+    const ang = (i / 6) * Math.PI * 2
+    c.position.set(Math.cos(ang) * raioBase * 0.9, 2.5, Math.sin(ang) * raioBase * 0.9)
+    c.scale.set(0, 0, 0)
+    boloGrupo.add(c)
+    gsap.to(c.scale, { x: 1, y: 1, z: 1, duration: 0.5, delay: 1.2 + i * 0.08, ease: 'back.out(1.7)' })
+    gsap.to(c.position, { y: 2.9, duration: 2, delay: 1.2 + i * 0.08, ease: 'sine.inOut', yoyo: true, repeat: -1 })
+    gsap.to(c.rotation, { z: Math.PI * 2, duration: 3, delay: 1.2 + i * 0.08, ease: 'none', repeat: -1 })
   }
 }
 function animate() {
@@ -161,22 +214,14 @@ function animate() {
 }
 containerRef.value?.addEventListener('mousedown', () => { isDragging = true })
 containerRef.value?.addEventListener('mouseup', () => { isDragging = false })
-containerRef.value?.addEventListener('mousemove', (e) => {
-  if (isDragging) targetRotation += e.movementX * 0.005
-})
+containerRef.value?.addEventListener('mousemove', (e) => { if (isDragging) targetRotation += e.movementX * 0.005 })
 watch(() => props.tamanho, criarBolo, { deep: true })
 watch(() => props.massa, criarBolo)
 watch(() => props.recheios, criarBolo)
 watch(() => props.cobertura, criarBolo)
 watch(() => props.fraseTopo, criarBolo)
-onMounted(() => {
-  init()
-  window.addEventListener('resize', onResize)
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', onResize)
-  if (renderer) renderer.dispose()
-})
+onMounted(() => { init(); window.addEventListener('resize', onResize) })
+onBeforeUnmount(() => { window.removeEventListener('resize', onResize); if (renderer) renderer.dispose(); if (gsap) gsap.killTweensOf([]) })
 function onResize() {
   const container = containerRef.value
   if (!container || !camera || !renderer) return

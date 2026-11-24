@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { gsap } from 'gsap'
 import { productService } from '@/services/products'
 import { categories } from '@/data/products'
 import ProductCard from '@/components/ProductCard.vue'
@@ -48,6 +49,20 @@ function openCustomizer(product) {
 
 onMounted(() => {
   loadProducts()
+  // GSAP: revelação cinematográfica da hero section
+  gsap.from('.hero-titulo', { y: 40, opacity: 0, duration: 0.8, ease: 'power3.out' })
+  gsap.from('.hero-subtitulo', { y: 30, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' })
+  gsap.from('.hero-selo', { scale: 0, opacity: 0, duration: 0.6, delay: 0.4, ease: 'back.out(1.7)' })
+  gsap.from('.hero-botao', { y: 20, opacity: 0, duration: 0.6, delay: 0.6, ease: 'power3.out' })
+
+  // Parallax sutil nos blobs de fundo
+  window.addEventListener('scroll', () => {
+    const scrolled = window.pageYOffset
+    const blob1 = document.getElementById('blob1')
+    const blob2 = document.getElementById('blob2')
+    if (blob1) blob1.style.transform = `translateY(${scrolled * 0.15}px)`
+    if (blob2) blob2.style.transform = `translateY(${-scrolled * 0.1}px)`
+  })
 })
 </script>
 
@@ -58,15 +73,15 @@ onMounted(() => {
       <!-- Hero Editorial -->
       <header class="relative mb-12 px-4 sm:px-0">
         <div class="max-w-3xl mx-auto text-center">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-secondary/10 border border-brand-secondary/20 text-brand-secondary text-[10px] font-medium uppercase tracking-wider mb-6">
+          <div class="hero-selo inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-secondary/10 border border-brand-secondary/20 text-brand-secondary text-[10px] font-medium uppercase tracking-wider mb-6">
             <span class="w-1.5 h-1.5 rounded-full bg-brand-secondary"></span>
             Artesanal · Sob encomenda
           </div>
-          <h1 class="font-fraunces font-bold text-4xl sm:text-6xl lg:text-7xl text-brand-text-primary mb-4 tracking-tight leading-tight">
+          <h1 class="hero-titulo font-fraunces font-bold text-4xl sm:text-6xl lg:text-7xl text-brand-text-primary mb-4 tracking-tight leading-tight">
             Doces feitos<br />
             com afeto.
           </h1>
-          <p class="font-sans text-lg sm:text-xl text-brand-text-muted max-w-2xl mx-auto mb-8 leading-relaxed">
+          <p class="hero-subtitulo font-sans text-lg sm:text-xl text-brand-text-muted max-w-2xl mx-auto mb-8 leading-relaxed">
             Bolos, doces finos e sobremesas produzidos de forma artesanal no
             Atelier Dona Ca Doceria. Tudo sob encomenda, com ingredientes
             selecionados e muito carinho.
@@ -74,7 +89,7 @@ onMounted(() => {
           <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href="#catalogo"
-              class="btn-primary px-8 py-4 text-base font-semibold"
+              class="hero-botao btn-primary px-8 py-4 text-base font-semibold"
             >
               Ver Cardápio
             <span class="ml-1"><ChevronRight class="w-4 h-4" /></span>
@@ -84,8 +99,8 @@ onMounted(() => {
 
         <!-- Decorative blur blobs -->
         <div class="absolute inset-0 overflow-hidden pointer-events-none -z-10" aria-hidden="true">
-          <div class="absolute top-[-10%] left-[-10%] w-72 h-72 bg-brand-primary/10 rounded-full blur-[100px]"></div>
-          <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-brand-secondary/10 rounded-full blur-[120px]"></div>
+          <div id="blob1" class="absolute top-[-10%] left-[-10%] w-72 h-72 bg-brand-rose/10 rounded-full blur-[100px]"></div>
+          <div id="blob2" class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-brand-mauve/10 rounded-full blur-[120px]"></div>
         </div>
       </header>
 
