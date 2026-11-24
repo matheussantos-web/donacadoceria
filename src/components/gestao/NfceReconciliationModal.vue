@@ -15,7 +15,7 @@
             Conciliação de Nota Fiscal
           </h3>
           <p class="text-sm text-brand-text-muted mt-1">
-            {{ nfce.storeName }} · {{ formatDateBR(nfce.issueDate) }} · Total R$ {{ formatPrice(nfce.totalAmount) }}
+            {{ nfce.storeName }} · {{ formatDateBR(nfce.issueDate) }} · Total {{ formatPrice(nfce.totalAmount) }}
           </p>
         </div>
         <button
@@ -96,8 +96,8 @@
                   </div>
                 </td>
                 <td class="pb-3 text-right">{{ formatNumber(item.quantity) }}</td>
-                <td class="pb-3 text-right">R$ {{ formatPrice(item.unit_price) }}</td>
-                <td class="pb-3 text-right">R$ {{ formatPrice(item.total_price) }}</td>
+                <td class="pb-3 text-right">{{ formatPrice(item.unit_price) }}</td>
+                <td class="pb-3 text-right">{{ formatPrice(item.total_price) }}</td>
                 <td class="pb-3">
                   <!-- Checkbox ignorar -->
                   <div class="flex items-center gap-2 mb-2">

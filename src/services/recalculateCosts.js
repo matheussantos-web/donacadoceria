@@ -132,7 +132,7 @@ export const recalculateCostsService = {
       // Carregar componentes deste produto
       const { data: components, error: compErr } = await supabase
         .from('priced_product_components')
-        .select('recipe_id, multiplier_or_qty, recipes(unit_cost)')
+        .select('recipe_id, ingredient_id, multiplier_or_qty, recipes(unit_cost), ingredients(cost_per_base_unit)')
         .eq('priced_product_id', product.id)
 
       if (compErr || !components) {
@@ -142,8 +142,16 @@ export const recalculateCostsService = {
 
       let productionCost = 0
       for (const comp of components) {
-        const recipeUnitCost = recipeCostMap.get(comp.recipe_id) ?? toNum(comp.recipes?.unit_cost)
-        productionCost += toNum(comp.multiplier_or_qty) * recipeUnitCost
+        // Componente do tipo receita (prato/insumo elaborado)
+        if (comp.recipe_id) {
+          const recipeUnitCost = recipeCostMap.get(comp.recipe_id) ?? toNum(comp.recipes?.unit_cost)
+          productionCost += toNum(comp.multiplier_or_qty) * recipeUnitCost
+        }
+        // Componente do tipo embalagem/insumo direto
+        else if (comp.ingredient_id) {
+          const ingredientUnitCost = toNum(comp.ingredients?.cost_per_base_unit)
+          productionCost += toNum(comp.multiplier_or_qty) * ingredientUnitCost
+        }
       }
 
       const totalProductionCost = round2(productionCost)
@@ -151,7 +159,7 @@ export const recalculateCostsService = {
       // Atualizar apenas total_production_cost (suggested_price é gerado pelo banco)
       const { error: updErr } = await supabase
         .from('priced_products')
-        .update({ total_production_cost })
+        .update({ total_production_cost: totalProductionCost, updated_at: new Date().toISOString() })
         .eq('id', product.id)
 
       if (updErr) {
