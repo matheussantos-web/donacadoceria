@@ -1,29 +1,19 @@
-p = '/c/Projetos/Freelance/catalogo_donacadoceria/src/components/Cake3DPreview.vue'
-
-conteudo = '''<template>
+<template>
   <div class="relative w-full h-[340px] sm:h-[380px] rounded-2xl overflow-hidden border border-[#B88D91]/40 bg-gradient-to-b from-[#F8F0E9] via-[#FFFDFB] to-[#F3E5E8] shadow-inner select-none">
     <div ref="containerRef" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
-
-    <!-- Botão Ver Camadas Internas -->
     <button
       type="button"
       @click="toggleCutaway"
       class="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all shadow-sm border"
-      :class="isCutawayOpen
-        ? 'bg-[#8E5365] text-white border-[#8E5365]'
-        : 'bg-[#F8F0E9]/90 text-[#6D4A4A] border-[#C98291]/50 hover:bg-[#C98291] hover:text-white'"
+      :class="isCutawayOpen ? 'bg-[#8E5365] text-white border-[#8E5365]' : 'bg-[#F8F0E9]/90 text-[#6D4A4A] border-[#C98291]/50 hover:bg-[#C98291] hover:text-white'"
     >
       <span>{{ isCutawayOpen ? '🎂 Fechar cobertura' : '👁️ Ver por dentro' }}</span>
     </button>
-
-    <!-- Selo superior esquerdo -->
     <div class="absolute top-3 left-3 z-10 pointer-events-none">
       <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/80 text-[#8E5365] border border-[#B88D91]/30 backdrop-blur-sm">
-        Tamanho {{ size }} • {{ line === 'premium' ? 'Linha Premium' : 'Linha Tradicional' }}
+        Tamanho {{ currentSize }} • {{ currentLine === 'premium' ? 'Linha Premium' : 'Linha Tradicional' }}
       </span>
     </div>
-
-    <!-- Legenda inferior -->
     <div class="absolute bottom-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
       <span class="px-2.5 py-1 rounded-full text-[11px] text-[#6D4A4A] bg-white/80 border border-[#B88D91]/30 backdrop-blur-sm">
         Arraste 360° • 10cm (3 massas + 2 recheios)
@@ -33,130 +23,6 @@ conteudo = '''<template>
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import gsap from 'gsap'
-
-const props = defineProps({
-  size: { type: String, default: 'M' },
-  line: { type: String, default: 'tradicional' },
-  batter: { type: Object, default: () => ({ name: 'Baunilha', color: '#F3DFC1' }) },
-  fillings: { type: Array, default: () => [] },
-  frosting: { type: Object, default: () => ({ name: 'Chantininho Creme', color: '#F8F0E9', style: 'smooth' }) },
-  topperText: { type: String, default: '' }
-})
-
-const containerRef = ref(null)
-const isCutawayOpen = ref(false)
-
-let scene, camera, renderer, controls, pmremGenerator, resizeObserver, animationFrameId
-let cakeRoot, frostingMesh, dripGroup, topperMesh
-let batterMeshes = []
-let fillingMeshes = []
-let rosetteMeshes = []
-let cutawayTimeout = null
-
-const SIZE_SCALES = {
-  P: 0.82,
-  M: 1.0,
-  G: 1.16,
-  GG: 1.32
-}
-
-// 1. Textura procedural da massa (alvéolos de bolo assado)
-function makeSpongeTextures(hexColor = '#F3DFC1') {
-  const canvas = document.createElement('canvas')
-  canvas.width = 256
-  canvas.height = 256
-  const ctx = canvas.getContext('2d')
-
-  ctx.fillStyle = hexColor
-  ctx.fillRect(0, 0, 256, 256)
-
-  for (let i = 0; i < 1500; i++) {
-    const x = Math.random() * 256
-    const y = Math.random() * 256
-    const rx = 1 + Math.random() * 2.5
-    const ry = 0.8 + Math.random() * 1.8
-    ctx.beginPath()
-    ctx.ellipse(x, y, rx, ry, Math.random() * Math.PI, 0, Math.PI * 2)
-    ctx.fillStyle = i % 2 === 0 ? 'rgba(45, 25, 15, 0.16)' : 'rgba(255, 255, 255, 0.14)'
-    ctx.fill()
-  }
-
-  const map = new THREE.CanvasTexture(canvas)
-  map.wrapS = THREE.RepeatWrapping
-  map.wrapT = THREE.RepeatWrapping
-  map.repeat.set(3, 1)
-
-  const bumpMap = new THREE.CanvasTexture(canvas)
-  bumpMap.wrapS = THREE.RepeatWrapping
-  bumpMap.wrapT = THREE.RepeatWrapping
-  bumpMap.repeat.set(3, 1)
-
-  return { map, bumpMap }
-}
-
-// 2. Textura procedural das estrias de espátula no chantininho
-function makeSpatulaBumpMap() {
-  const canvas = document.createElement('canvas')
-  canvas.width = 512
-  canvas.height = 256
-  const ctx = canvas.getContext('2d')
-
-  ctx.fillStyle = '#808080'
-  ctx.fillRect(0, 0, 512, 256)
-
-  const stripes = 42
-  const h = 256 / stripes
-  for (let i = 0; i < stripes; i++) {
-    const grad = ctx.createLinearGradient(0, i * h, 0, (i + 1) * h)
-    grad.addColorStop(0, '#686868')
-    grad.addColorStop(0.5, '#989898')
-    grad.addColorStop(1, '#686868')
-    ctx.fillStyle = grad
-    ctx.fillRect(0, i * h, 512, h)
-  }
-
-  const tex = new THREE.CanvasTexture(canvas)
-  tex.wrapS = THREE.RepeatWrapping
-  tex.wrapT = THREE.ClampToEdgeWrapping
-  tex.repeat.set(4, 1)
-  tex.bumpScale = 0.02
-  return tex
-}
-
-// 3. Cores de apoio
-const CORES_MASSA = {
-  'baunilha': '#F3DFC1',
-  'chocolate': '#4E3229',
-  'redvelvet': '#8E354A',
-}
-
-const CORES_RECHEIO = {
-  'brigadeiro': '#3B231C',
-  'ninho': '#FFF8EB',
-  'morango': '#C95B72',
-  'doce_leite': '#C68B59',
-  'maracuja': '#E8B948',
-  'pistache': '#7A4426',
-}
-
-const CORES_COBERTURA = {
-  'chantininho': '#F8F0E9',
-  'chantininho_rose': '#C98291',
-  'berry': '#8E5365',
-  'ganache': '#4A2E2B',
-  'naked': '#FFFFFF',
-}
-
-function hexToColor(hex) {
-  return new THREE.Color(hex)
-}
-
-// Inicialização da cena 3D
 function init() {
   const container = containerRef.value
   if (!container) return
@@ -190,11 +56,9 @@ function init() {
   controls.autoRotate = true
   controls.autoRotateSpeed = 1.2
 
-  // Luz ambiente de estúdio
   const hemi = new THREE.HemisphereLight(0xfff9f3, 0xd8c3b8, 0.85)
   scene.add(hemi)
 
-  // Key Light
   const keyLight = new THREE.DirectionalLight(0xfff5ea, 1.8)
   keyLight.position.set(4, 7, 5)
   keyLight.castShadow = true
@@ -202,12 +66,10 @@ function init() {
   keyLight.shadow.bias = -0.0005
   scene.add(keyLight)
 
-  // Rim Light rosada
   const rimLight = new THREE.DirectionalLight(0xf6c1cd, 0.75)
   rimLight.position.set(-5, 4, -4)
   scene.add(rimLight)
 
-  // Sombra no chão
   const shadowGeo = new THREE.CircleGeometry(2.2, 32)
   const shadowMat = new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.18 })
   shadowMat.transparent = true
@@ -217,7 +79,6 @@ function init() {
   shadowMesh.receiveShadow = true
   scene.add(shadowMesh)
 
-  // Boleira de porcelana com pé
   const perfilBoleira = [
     new THREE.Vector2(1.65, 0),
     new THREE.Vector2(1.55, 0.05),
@@ -284,14 +145,14 @@ function limparBolo() {
 function criarBolo() {
   limparBolo()
 
-  const escala = SIZE_SCALES[size] || 1.0
+  const escala = SIZE_SCALES[currentSize.value] || 1.0
   const raioBase = 1.12
   const discoAltura = 0.36
   const recheioAltura = 0.18
 
-  const corMassa = CORES_MASSA[batter?.color] || '#F3DFC1'
-  const corCobertura = CORES_COBERTURA[frosting?.color] || '#F8F0E9'
-  const recheiosSelecionados = props.fillings || []
+  const corMassa = CORES_MASSA[currentBatter.value.color] || '#F3DFC1'
+  const corCobertura = CORES_COBERTURA[currentFrosting.value.color] || '#F8F0E9'
+  const recheiosSelecionados = currentFillings.value || []
 
   const { map: texMap, bumpMap: texBump } = makeSpongeTextures(corMassa)
   const matMassa = new THREE.MeshStandardMaterial({
@@ -341,14 +202,12 @@ function criarBolo() {
     }
   }
 
-  // Topo da cobertura
   const topoGeo = new THREE.CylinderGeometry(raioBase * 1.06, raioBase * 1.06, 0.12, 48)
   const topoMat = new THREE.MeshPhysicalMaterial({ color: corCobertura, roughness: 0.42, clearcoat: 0.12 })
   const topo = new THREE.Mesh(topoGeo, topoMat)
   topo.position.y = y + 0.06
 
-  // Lateral da cobertura
-  const ehNaked = (frosting?.style || '') === 'naked' || frosting?.name?.toLowerCase().includes('naked')
+  const ehNaked = (currentFrosting.value.style || '') === 'naked' || currentFrosting.value.name?.toLowerCase().includes('naked')
   let lateral = null
   if (!ehNaked) {
     const alturaLateral = y + 0.12 - discoAltura / 2 + 0.12
@@ -372,28 +231,83 @@ function criarBolo() {
   frostingMesh.position.y = 0
   cakeRoot.add(frostingMesh)
 
-  // Ajuste de escala
   cakeRoot.scale.set(escala, escala, escala)
 
-  // Animação GSAP de montagem
   animarMontagem()
 
-  // Drip cake
-  if (frosting?.color === '#4A2E2B' || frosting?.color === '#8E5365') {
+  if (currentFrosting.value.color === '#4A2E2B' || currentFrosting.value.color === '#8E5365') {
     criarDrip(raioBase, y, corCobertura)
   }
 
-  // Rosetas e decorações no topo
   criarDecoroTopo(raioBase, y, corCobertura)
 
-  // Topper personalizado
-  criarTopper(raioBase, y, props.topperText)
+  criarTopper(raioBase, y, currentTopper.value)
 
-  // Modo raio-x se naked
   if (ehNaked) {
     isCutawayOpen.value = true
     aplicarCutaway(true)
   }
+}
+
+function makeSpongeTextures(hexColor = '#F3DFC1') {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')
+
+  ctx.fillStyle = hexColor
+  ctx.fillRect(0, 0, 256, 256)
+
+  for (let i = 0; i < 1500; i++) {
+    const x = Math.random() * 256
+    const y = Math.random() * 256
+    const rx = 1 + Math.random() * 2.5
+    const ry = 0.8 + Math.random() * 1.8
+    ctx.beginPath()
+    ctx.ellipse(x, y, rx, ry, Math.random() * Math.PI, 0, Math.PI * 2)
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(45, 25, 15, 0.16)' : 'rgba(255, 255, 255, 0.14)'
+    ctx.fill()
+  }
+
+  const map = new THREE.CanvasTexture(canvas)
+  map.wrapS = THREE.RepeatWrapping
+  map.wrapT = THREE.RepeatWrapping
+  map.repeat.set(3, 1)
+
+  const bumpMap = new THREE.CanvasTexture(canvas)
+  bumpMap.wrapS = THREE.RepeatWrapping
+  bumpMap.wrapT = THREE.RepeatWrapping
+  bumpMap.repeat.set(3, 1)
+
+  return { map, bumpMap }
+}
+
+function makeSpatulaBumpMap() {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')
+
+  ctx.fillStyle = '#808080'
+  ctx.fillRect(0, 0, 512, 256)
+
+  const stripes = 42
+  const h = 256 / stripes
+  for (let i = 0; i < stripes; i++) {
+    const grad = ctx.createLinearGradient(0, i * h, 0, (i + 1) * h)
+    grad.addColorStop(0, '#686868')
+    grad.addColorStop(0.5, '#989898')
+    grad.addColorStop(1, '#686868')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, i * h, 512, h)
+  }
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.wrapS = THREE.RepeatWrapping
+  tex.wrapT = THREE.ClampToEdgeWrapping
+  tex.repeat.set(4, 1)
+  tex.bumpScale = 0.02
+  return tex
 }
 
 function criarDrip(raioBase, yTopo, corCalda) {
@@ -526,7 +440,7 @@ function criarTopper(raioBase, yTopo, frase) {
 
 function animarMontagem() {
   cakeRoot.scale.set(0.01, 0.01, 0.01)
-  const escala = SIZE_SCALES[size] || 1.0
+  const escala = SIZE_SCALES[currentSize.value] || 1.0
   gsap.to(cakeRoot.scale, {
     x: escala, y: escala, z: escala,
     duration: 1.2,
@@ -582,12 +496,13 @@ function animate() {
 containerRef.value?.addEventListener('mousedown', () => {})
 containerRef.value?.addEventListener('mouseup', () => {})
 
-watch(() => props.size, criarBolo)
-watch(() => props.line, criarBolo)
-watch(() => props.batter, criarBolo, { deep: true })
-watch(() => props.fillings, criarBolo, { deep: true })
-watch(() => props.frosting, criarBolo, { deep: true })
-watch(() => props.topperText, criarBolo)
+watch(() => currentSize.value, criarBolo)
+watch(() => currentLine.value, criarBolo)
+watch(() => currentBatter.value, criarBolo, { deep: true })
+watch(() => currentFillings.value, criarBolo, { deep: true })
+watch(() => currentFrosting.value, criarBolo, { deep: true })
+watch(() => currentTopper.value, criarBolo)
+watch(() => isCutawayOpen.value, (v) => aplicarCutaway(v))
 
 onMounted(() => {
   init()
@@ -612,9 +527,5 @@ function onResize() {
   camera.updateProjectionMatrix()
   renderer.setSize(container.clientWidth, container.clientHeight)
 }
-</script>
-'''
 
-with open(p, 'w', encoding='utf-8') as f:
-    f.write(conteudo)
-print('Cake3DPreview.vue escrito com sucesso')
+</script>
