@@ -1,113 +1,106 @@
 p = '/c/Projetos/Freelance/catalogo_donacadoceria/src/components/Cake3DPreview.vue'
 
 conteudo = '''<template>
-  <div class="cake3d-preview w-full h-[400px] sm:h-[480px] md:h-[520px] rounded-2xl overflow-hidden bg-brand-creme border border-brand-mauve/20 shadow-xl relative">
-    <div ref="containerRef" class="w-full h-full"></div>
+  <div class="relative w-full h-[340px] sm:h-[380px] rounded-2xl overflow-hidden border border-[#B88D91]/40 bg-gradient-to-b from-[#F8F0E9] via-[#FFFDFB] to-[#F3E5E8] shadow-inner select-none">
+    <div ref="containerRef" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
 
-    <!-- Botão Ver por dentro -->
+    <!-- Botão Ver Camadas Internas -->
     <button
-      v-if="!raioX"
-      @click="ativarRaioX"
-      class="absolute top-4 right-4 z-20 px-3 py-1.5 bg-white/90 backdrop-blur-md border border-brand-mauve/30 text-[10px] font-bold text-brand-cacau rounded-full shadow-lg hover:bg-brand-rose hover:text-white transition-all duration-300 flex items-center gap-1.5"
+      type="button"
+      @click="toggleCutaway"
+      class="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all shadow-sm border"
+      :class="isCutawayOpen
+        ? 'bg-[#8E5365] text-white border-[#8E5365]'
+        : 'bg-[#F8F0E9]/90 text-[#6D4A4A] border-[#C98291]/50 hover:bg-[#C98291] hover:text-white'"
     >
-      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7h9.543c0 2.89 2.333 5.224 5.333 5.733zM20 13l.001-.001-.001-.001-.001-.001-.001-.001-.001-.001-.001-.001-.001-.001-.001-.001l.001.001.001.001.001.001.001.001.001.001.001.001zM15 15c-2.361 0-4.376-1.376-5.192-3.472a4 4 0 011.568-2.032L9.948 10.56c-.393-.393-.393-1.029 0-1.422l1.422-1.422a1.002 1.002 0 011.414 0l1.414 1.414c.393.393.393 1.029 0 1.422L15 13.586l-1.422 1.422a1 1 0 01-1.414-1.414z" />
-      </svg>
-      <span class="text-[10px] font-medium">Ver por dentro</span>
-    </button>
-    <button
-      v-else
-      @click="desativarRaioX"
-      class="absolute top-4 right-4 z-20 px-3 py-1.5 bg-brand-rose/90 backdrop-blur-md border border-brand-rose/50 text-[10px] font-bold text-white rounded-full shadow-lg hover:bg-brand-rose transition-all duration-300 flex items-center gap-1.5"
-    >
-      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.543 7H13c0 4.714 3.734 8.571 8 8.571s8-3.857 8-8.571S18.478 4.5 14 4.5c-4.477 0-8.268 2.943-9.542 7H2.458z" />
-      </svg>
-      <span class="text-[10px] font-medium">Fechar vista interna</span>
+      <span>{{ isCutawayOpen ? '🎂 Fechar cobertura' : '👁️ Ver por dentro' }}</span>
     </button>
 
-    <!-- Etiqueta inferior -->
-    <div class="absolute bottom-4 left-4 z-20 flex items-center gap-2 bg-white/80 backdrop-blur-md border border-brand-mauve/30 px-3 py-2 rounded-lg shadow-lg">
-      <svg class="w-3 h-3 text-brand-rose" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7h9.543c0 2.89 2.333 5.224 5.333 5.733z" />
-      </svg>
-      <span class="text-[10px] text-brand-cacau font-medium">3 discos de massa &bull; 2 camadas de recheio &bull; 10 cm</span>
+    <!-- Selo superior esquerdo -->
+    <div class="absolute top-3 left-3 z-10 pointer-events-none">
+      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/80 text-[#8E5365] border border-[#B88D91]/30 backdrop-blur-sm">
+        Tamanho {{ size }} • {{ line === 'premium' ? 'Linha Premium' : 'Linha Tradicional' }}
+      </span>
+    </div>
+
+    <!-- Legenda inferior -->
+    <div class="absolute bottom-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
+      <span class="px-2.5 py-1 rounded-full text-[11px] text-[#6D4A4A] bg-white/80 border border-[#B88D91]/30 backdrop-blur-sm">
+        Arraste 360° • 10cm (3 massas + 2 recheios)
+      </span>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import * as THREE from 'three'
-import { gsap } from 'gsap'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
+import gsap from 'gsap'
 
 const props = defineProps({
-  tamanho: { type: Object, default: () => ({ label: 'M', serve: 'até 15 pessoas', precoMultiplicador: 1.0 }) },
-  massa: { type: String, default: 'baunilha' },
-  recheios: { type: Array, default: () => [] },
-  cobertura: { type: String, default: 'chantininho' },
-  fraseTopo: { type: String, default: '' },
-  linha: { type: String, default: 'tradicional' },
+  size: { type: String, default: 'M' },
+  line: { type: String, default: 'tradicional' },
+  batter: { type: Object, default: () => ({ name: 'Baunilha', color: '#F3DFC1' }) },
+  fillings: { type: Array, default: () => [] },
+  frosting: { type: Object, default: () => ({ name: 'Chantininho Creme', color: '#F8F0E9', style: 'smooth' }) },
+  topperText: { type: String, default: '' }
 })
 
 const containerRef = ref(null)
-const raioX = ref(false)
+const isCutawayOpen = ref(false)
 
-let scene, camera, renderer, pmremGenerator, controls
-let cakeGroup, prato, coberturaMesh
-let cameraTargetRotation = 0
-let cameraCurrentRotation = 0
-let isDragging = false
+let scene, camera, renderer, controls, pmremGenerator, resizeObserver, animationFrameId
+let cakeRoot, frostingMesh, dripGroup, topperMesh
+let batterMeshes = []
+let fillingMeshes = []
+let rosetteMeshes = []
+let cutawayTimeout = null
 
-const ESCALAS_TAMANHO = { P: 0.82, M: 1.0, G: 1.18, GG: 1.34 }
-
-const CORES = {
-  massa: { baunilha: '#F3DFC1', chocolate: '#4E3229', redvelvet: '#8E354A' },
-  recheio: { brigadeiro: '#3B231C', ninho: '#FFF8EB', morango: '#C95B72', doce_leite: '#C68B59', maracuja: '#E8B948', pistache: '#7A4426' },
-  cobertura: { chantininho: '#F8F0E9', chantininho_rose: '#C98291', berry: '#8E5365', ganache: '#4A2E2B', naked: '#FFFFFF' },
+const SIZE_SCALES = {
+  P: 0.82,
+  M: 1.0,
+  G: 1.16,
+  GG: 1.32
 }
 
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1, 3), 16) / 255
-  const g = parseInt(hex.slice(3, 5), 16) / 255
-  const b = parseInt(hex.slice(5, 7), 16) / 255
-  return new THREE.Color(r, g, b)
-}
-
-function createSpongeTexture(hexColor) {
+// 1. Textura procedural da massa (alvéolos de bolo assado)
+function makeSpongeTextures(hexColor = '#F3DFC1') {
   const canvas = document.createElement('canvas')
   canvas.width = 256
   canvas.height = 256
   const ctx = canvas.getContext('2d')
 
-  const base = hexToRgb(hexColor)
-  ctx.fillStyle = `rgb(${Math.round(base.r * 255)},${Math.round(base.g * 255)},${Math.round(base.b * 255)})`
+  ctx.fillStyle = hexColor
   ctx.fillRect(0, 0, 256, 256)
 
-  for (let i = 0; i < 1800; i++) {
+  for (let i = 0; i < 1500; i++) {
     const x = Math.random() * 256
     const y = Math.random() * 256
-    const r = 2 + Math.random() * 6
-    const maisEscuro = Math.random() < 0.5
-    const fator = maisEscuro ? 0.75 : 1.25
-    const corR = Math.max(0, Math.min(255, Math.round(base.r * 255 * fator)))
-    const corG = Math.max(0, Math.min(255, Math.round(base.g * 255 * fator)))
-    const corB = Math.max(0, Math.min(255, Math.round(base.b * 255 * fator)))
-    ctx.fillStyle = `rgba(${corR},${corG},${corB},${0.15 + Math.random() * 0.3})`
+    const rx = 1 + Math.random() * 2.5
+    const ry = 0.8 + Math.random() * 1.8
     ctx.beginPath()
-    ctx.ellipse(x, y, r, r * 0.6, Math.random() * Math.PI, 0, Math.PI * 2)
+    ctx.ellipse(x, y, rx, ry, Math.random() * Math.PI, 0, Math.PI * 2)
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(45, 25, 15, 0.16)' : 'rgba(255, 255, 255, 0.14)'
     ctx.fill()
   }
 
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.bumpScale = 0.035
-  return { map: texture, bumpMap: texture }
+  const map = new THREE.CanvasTexture(canvas)
+  map.wrapS = THREE.RepeatWrapping
+  map.wrapT = THREE.RepeatWrapping
+  map.repeat.set(3, 1)
+
+  const bumpMap = new THREE.CanvasTexture(canvas)
+  bumpMap.wrapS = THREE.RepeatWrapping
+  bumpMap.wrapT = THREE.RepeatWrapping
+  bumpMap.repeat.set(3, 1)
+
+  return { map, bumpMap }
 }
 
-function createFrostingBumpTexture() {
+// 2. Textura procedural das estrias de espátula no chantininho
+function makeSpatulaBumpMap() {
   const canvas = document.createElement('canvas')
   canvas.width = 512
   canvas.height = 256
@@ -116,58 +109,54 @@ function createFrostingBumpTexture() {
   ctx.fillStyle = '#808080'
   ctx.fillRect(0, 0, 512, 256)
 
-  for (let i = 0; i < 45; i++) {
-    const y = (i / 45) * 256
-    const grad = ctx.createLinearGradient(0, y, 0, y + 12)
+  const stripes = 42
+  const h = 256 / stripes
+  for (let i = 0; i < stripes; i++) {
+    const grad = ctx.createLinearGradient(0, i * h, 0, (i + 1) * h)
     grad.addColorStop(0, '#686868')
     grad.addColorStop(0.5, '#989898')
     grad.addColorStop(1, '#686868')
     ctx.fillStyle = grad
-    ctx.fillRect(0, y, 512, 6)
+    ctx.fillRect(0, i * h, 512, h)
   }
 
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.wrapS = THREE.RepeatWrapping
-  texture.bumpScale = 0.018
-  return texture
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.wrapS = THREE.RepeatWrapping
+  tex.wrapT = THREE.ClampToEdgeWrapping
+  tex.repeat.set(4, 1)
+  tex.bumpScale = 0.02
+  return tex
 }
 
-function createTopperTexture(text) {
-  const canvas = document.createElement('canvas')
-  canvas.width = 512
-  canvas.height = 256
-  const ctx = canvas.getContext('2d')
-
-  const frase = text || 'Feito com carinho'
-
-  // Placa oval/nuvem
-  ctx.fillStyle = '#F8F0E9'
-  ctx.beginPath()
-  ctx.ellipse(256, 128, 200, 70, 0, 0, Math.PI * 2)
-  ctx.fill()
-
-  // Borda dupla rosé
-  ctx.strokeStyle = '#C98291'
-  ctx.lineWidth = 4
-  ctx.stroke()
-
-  ctx.lineWidth = 1.5
-  ctx.strokeStyle = '#C98291'
-  ctx.beginPath()
-  ctx.ellipse(256, 128, 190, 60, 0, 0, Math.PI * 2)
-  ctx.stroke()
-
-  // Texto centralizado
-  ctx.fillStyle = '#8E5365'
-  ctx.font = 'italic bold 26px "Playfair Display", serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(frase, 256, 128)
-
-  const texture = new THREE.CanvasTexture(canvas)
-  return texture
+// 3. Cores de apoio
+const CORES_MASSA = {
+  'baunilha': '#F3DFC1',
+  'chocolate': '#4E3229',
+  'redvelvet': '#8E354A',
 }
 
+const CORES_RECHEIO = {
+  'brigadeiro': '#3B231C',
+  'ninho': '#FFF8EB',
+  'morango': '#C95B72',
+  'doce_leite': '#C68B59',
+  'maracuja': '#E8B948',
+  'pistache': '#7A4426',
+}
+
+const CORES_COBERTURA = {
+  'chantininho': '#F8F0E9',
+  'chantininho_rose': '#C98291',
+  'berry': '#8E5365',
+  'ganache': '#4A2E2B',
+  'naked': '#FFFFFF',
+}
+
+function hexToColor(hex) {
+  return new THREE.Color(hex)
+}
+
+// Inicialização da cena 3D
 function init() {
   const container = containerRef.value
   if (!container) return
@@ -175,9 +164,9 @@ function init() {
   scene = new THREE.Scene()
   scene.background = new THREE.Color('#F8F0E9')
 
-  camera = new THREE.PerspectiveCamera(34, container.clientWidth / container.clientHeight, 0.1, 100)
-  camera.position.set(0, 3.4, 6.2)
-  camera.lookAt(0, 1.1, 0)
+  camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100)
+  camera.position.set(0, 3.2, 6.5)
+  camera.lookAt(0, 1.0, 0)
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
   renderer.setSize(container.clientWidth, container.clientHeight)
@@ -199,7 +188,7 @@ function init() {
   controls.minPolarAngle = Math.PI / 5
   controls.maxPolarAngle = Math.PI / 2.15
   controls.autoRotate = true
-  controls.autoRotateSpeed = 1.4
+  controls.autoRotateSpeed = 1.2
 
   // Luz ambiente de estúdio
   const hemi = new THREE.HemisphereLight(0xfff9f3, 0xd8c3b8, 0.85)
@@ -248,13 +237,12 @@ function init() {
     clearcoat: 0.8,
     clearcoatRoughness: 0.1,
   })
-  prato = new THREE.Mesh(boleiraGeo, boleiraMat)
-  prato.position.y = 0
-  prato.castShadow = true
-  prato.receiveShadow = true
-  scene.add(prato)
+  const boleira = new THREE.Mesh(boleiraGeo, boleiraMat)
+  boleira.position.y = 0
+  boleira.castShadow = true
+  boleira.receiveShadow = true
+  scene.add(boleira)
 
-  // Filete dourado/rosé na borda do prato
   const fileteGeo = new THREE.TorusGeometry(1.62, 0.025, 16, 100)
   const fileteMat = new THREE.MeshPhysicalMaterial({ color: 0xc98291, metalness: 0.6, roughness: 0.25 })
   const filete = new THREE.Mesh(fileteGeo, fileteMat)
@@ -263,45 +251,57 @@ function init() {
   filete.castShadow = true
   scene.add(filete)
 
-  cakeGroup = new THREE.Group()
-  cakeGroup.position.y = 0
-  scene.add(cakeGroup)
-
-  coberturaMesh = new THREE.Group()
-  cakeGroup.add(coberturaMesh)
+  cakeRoot = new THREE.Group()
+  cakeRoot.position.y = 0
+  scene.add(cakeRoot)
 
   criarBolo()
   animate()
 }
 
+function limparBolo() {
+  batterMeshes.forEach(m => cakeRoot.remove(m))
+  fillingMeshes.forEach(m => cakeRoot.remove(m))
+  rosetteMeshes.forEach(m => cakeRoot.remove(m))
+  batterMeshes = []
+  fillingMeshes = []
+  rosetteMeshes = []
+
+  if (frostingMesh) {
+    cakeRoot.remove(frostingMesh)
+    frostingMesh = null
+  }
+  if (dripGroup) {
+    cakeRoot.remove(dripGroup)
+    dripGroup = null
+  }
+  if (topperMesh) {
+    cakeRoot.remove(topperMesh)
+    topperMesh = null
+  }
+}
+
 function criarBolo() {
-  while (cakeGroup.children.length > 0) {
-    cakeGroup.remove(cakeGroup.children[0])
-  }
-  while (coberturaMesh.children.length > 0) {
-    coberturaMesh.remove(coberturaMesh.children[0])
-  }
+  limparBolo()
 
-  cakeGroup.add(coberturaMesh)
-
-  const escala = ESCALAS_TAMANHO[props.tamanho?.label] || 1.0
+  const escala = SIZE_SCALES[size] || 1.0
   const raioBase = 1.12
   const discoAltura = 0.36
   const recheioAltura = 0.18
 
-  const corMassa = CORES.massa[props.massa] || '#F3DFC1'
-  const corCobertura = CORES.cobertura[props.cobertura] || '#F8F0E9'
-  const recheiosSelecionados = props.recheios || []
+  const corMassa = CORES_MASSA[batter?.color] || '#F3DFC1'
+  const corCobertura = CORES_COBERTURA[frosting?.color] || '#F8F0E9'
+  const recheiosSelecionados = props.fillings || []
 
-  const texMassa = createSpongeTexture(corMassa)
+  const { map: texMap, bumpMap: texBump } = makeSpongeTextures(corMassa)
   const matMassa = new THREE.MeshStandardMaterial({
-    map: texMassa.map,
-    bumpMap: texMassa.bumpMap,
+    map: texMap,
+    bumpMap: texBump,
     bumpScale: 0.035,
     roughness: 0.88,
   })
 
-  const texFrosting = createFrostingBumpTexture()
+  const texFrosting = makeSpatulaBumpMap()
 
   let y = discoAltura / 2
   for (let i = 0; i < 3; i++) {
@@ -312,12 +312,12 @@ function criarBolo() {
     disco.position.y = y
     disco.castShadow = true
     disco.receiveShadow = true
-    cakeGroup.add(disco)
+    cakeRoot.add(disco)
+    batterMeshes.push(disco)
     y += discoAltura
 
     if (i < 2) {
-      const corRecheio = CORES.recheio[recheiosSelecionados[i]] || '#FFF8EB'
-      // Borda abaulada do recheio (TorusGeometry) para parecer creme espremido
+      const corRecheio = CORES_RECHEIO[recheiosSelecionados[i]?.color || recheiosSelecionados[i]] || '#FFF8EB'
       const recheioBorda = new THREE.Mesh(
         new THREE.TorusGeometry(1.06, 0.09, 16, 48),
         new THREE.MeshPhysicalMaterial({ color: corRecheio, roughness: 0.22, clearcoat: 0.45 })
@@ -325,16 +325,17 @@ function criarBolo() {
       recheioBorda.position.y = y + recheioAltura / 2
       recheioBorda.rotation.x = Math.PI / 2
       recheioBorda.castShadow = true
-      cakeGroup.add(recheioBorda)
+      cakeRoot.add(recheioBorda)
+      fillingMeshes.push(recheioBorda)
 
-      // Preenchimento interno do recheio
       const recheioCentro = new THREE.Mesh(
         new THREE.CylinderGeometry(1.06, 1.06, recheioAltura, 32),
         new THREE.MeshPhysicalMaterial({ color: corRecheio, roughness: 0.22, clearcoat: 0.45 })
       )
       recheioCentro.position.y = y + recheioAltura / 2
       recheioCentro.castShadow = true
-      cakeGroup.add(recheioCentro)
+      cakeRoot.add(recheioCentro)
+      fillingMeshes.push(recheioCentro)
 
       y += recheioAltura
     }
@@ -345,14 +346,13 @@ function criarBolo() {
   const topoMat = new THREE.MeshPhysicalMaterial({ color: corCobertura, roughness: 0.42, clearcoat: 0.12 })
   const topo = new THREE.Mesh(topoGeo, topoMat)
   topo.position.y = y + 0.06
-  coberturaMesh.add(topo)
 
-  // Lateral da cobertura (casca externa)
-  const ehNaked = props.cobertura === 'naked'
+  // Lateral da cobertura
+  const ehNaked = (frosting?.style || '') === 'naked' || frosting?.name?.toLowerCase().includes('naked')
+  let lateral = null
   if (!ehNaked) {
     const alturaLateral = y + 0.12 - discoAltura / 2 + 0.12
     const lateralGeo = new THREE.CylinderGeometry(raioBase * 1.06, raioBase * 1.06, alturaLateral, 48)
-    lateralGeo.applyTextureCoordinate(texFrosting)
     const lateralMat = new THREE.MeshPhysicalMaterial({
       map: texFrosting,
       bumpMap: texFrosting,
@@ -361,22 +361,25 @@ function criarBolo() {
       roughness: 0.42,
       clearcoat: 0.12,
     })
-    const lateral = new THREE.Mesh(lateralGeo, lateralMat)
+    lateral = new THREE.Mesh(lateralGeo, lateralMat)
     lateral.position.y = (alturaLateral / 2) - discoAltura / 2 + 0.06 + discoAltura / 2
     lateral.castShadow = true
-    coberturaMesh.add(lateral)
   }
 
-  coberturaMesh.position.y = 0
+  frostingMesh = new THREE.Group()
+  frostingMesh.add(topo)
+  if (lateral) frostingMesh.add(lateral)
+  frostingMesh.position.y = 0
+  cakeRoot.add(frostingMesh)
 
-  // Ajuste de escala do bolo inteiro
-  cakeGroup.scale.set(escala, escala, escala)
+  // Ajuste de escala
+  cakeRoot.scale.set(escala, escala, escala)
 
   // Animação GSAP de montagem
   animarMontagem()
 
-  // Drip cake se ganache ou cobertura com calda
-  if (props.cobertura === 'ganache' || props.cobertura === 'berry') {
+  // Drip cake
+  if (frosting?.color === '#4A2E2B' || frosting?.color === '#8E5365') {
     criarDrip(raioBase, y, corCobertura)
   }
 
@@ -384,18 +387,18 @@ function criarBolo() {
   criarDecoroTopo(raioBase, y, corCobertura)
 
   // Topper personalizado
-  criarTopper(raioBase, y, props.fraseTopo)
+  criarTopper(raioBase, y, props.topperText)
 
-  // Modo raio-x inicial se naked
+  // Modo raio-x se naked
   if (ehNaked) {
-    raioX.value = true
-    aplicarRaioX(true)
+    isCutawayOpen.value = true
+    aplicarCutaway(true)
   }
 }
 
 function criarDrip(raioBase, yTopo, corCalda) {
-  const dripGroup = new THREE.Group()
-  coberturaMesh.add(dripGroup)
+  dripGroup = new THREE.Group()
+  cakeRoot.add(dripGroup)
 
   const numGotas = 24
   for (let i = 0; i < numGotas; i++) {
@@ -413,7 +416,6 @@ function criarDrip(raioBase, yTopo, corCalda) {
     gota.castShadow = true
     dripGroup.add(gota)
 
-    // Ponta esférica da gota
     const pontaGeo = new THREE.SphereGeometry(0.045, 10, 10)
     const ponta = new THREE.Mesh(pontaGeo, gotaMat)
     ponta.position.set(0, -alturaGota / 2 - 0.02, 0)
@@ -437,17 +439,17 @@ function criarDecoroTopo(raioBase, yTopo, corCobertura) {
     roseta.rotation.x = Math.PI / 2 + Math.random() * 0.3
     roseta.rotation.z = angulo
     roseta.castShadow = true
-    coberturaMesh.add(roseta)
+    cakeRoot.add(roseta)
+    rosetteMeshes.push(roseta)
   }
 
-  // Morangos / brigadeiros intercalados
   for (let i = 0; i < 6; i++) {
     const angulo = ((i / 6) * Math.PI * 2) + Math.PI / 6
     const eMorango = Math.random() > 0.5
     const docinho = new THREE.Mesh(
       new THREE.ConeGeometry(0.055, 0.16, 12),
       new THREE.MeshPhysicalMaterial({
-        color: eMorango ? 0xb81d38 : corCobertura,
+        color: eMorango ? 0xb81d38 : new THREE.Color(corCobertura).getHex(),
         roughness: 0.25,
         clearcoat: 0.3,
       })
@@ -459,10 +461,10 @@ function criarDecoroTopo(raioBase, yTopo, corCobertura) {
     )
     docinho.rotation.z = angulo
     docinho.castShadow = true
-    coberturaMesh.add(docinho)
+    cakeRoot.add(docinho)
+    rosetteMeshes.push(docinho)
 
     if (eMorango) {
-      // Folhinha verde
       const folha = new THREE.Mesh(
         new THREE.ConeGeometry(0.025, 0.05, 4),
         new THREE.MeshPhysicalMaterial({ color: 0x3d6b35, roughness: 0.6 })
@@ -475,39 +477,63 @@ function criarDecoroTopo(raioBase, yTopo, corCobertura) {
 }
 
 function criarTopper(raioBase, yTopo, frase) {
-  // Haste fina
   const hasteGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.5, 8)
   const hasteMat = new THREE.MeshPhysicalMaterial({ color: 0xc98291, metalness: 0.5, roughness: 0.3 })
   const haste = new THREE.Mesh(hasteGeo, hasteMat)
   haste.position.set(0, yTopo + 0.36 + 0.25, 0)
   haste.castShadow = true
-  coberturaMesh.add(haste)
+  cakeRoot.add(haste)
 
-  // Placa
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')
+  const texto = frase || 'Feito com carinho'
+
+  ctx.fillStyle = '#F8F0E9'
+  ctx.beginPath()
+  ctx.ellipse(256, 128, 200, 70, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.strokeStyle = '#C98291'
+  ctx.lineWidth = 4
+  ctx.stroke()
+
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.ellipse(256, 128, 190, 60, 0, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.fillStyle = '#8E5365'
+  ctx.font = 'italic bold 26px "Playfair Display", serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(texto, 256, 128)
+
+  const placaTex = new THREE.CanvasTexture(canvas)
   const placaGeo = new THREE.PlaneGeometry(0.34, 0.16)
-  const placaTex = createTopperTexture(frase)
   const placaMat = new THREE.MeshStandardMaterial({ map: placaTex, transparent: true })
   const placa = new THREE.Mesh(placaGeo, placaMat)
   placa.position.set(0, yTopo + 0.36 + 0.52, 0)
   placa.rotation.x = -Math.PI / 6
   placa.castShadow = true
-  coberturaMesh.add(placa)
+  cakeRoot.add(placa)
+
+  topperMesh = new THREE.Group()
+  topperMesh.add(haste)
+  topperMesh.add(placa)
 }
 
 function animarMontagem() {
-  // Scale do bolo cresce suavemente
-  cakeGroup.scale.set(0.01, 0.01, 0.01)
-  gsap.to(cakeGroup.scale, {
-    x: ESCALAS_TAMANHO[props.tamanho?.label] || 1.0,
-    y: ESCALAS_TAMANHO[props.tamanho?.label] || 1.0,
-    z: ESCALAS_TAMANHO[props.tamanho?.label] || 1.0,
+  cakeRoot.scale.set(0.01, 0.01, 0.01)
+  const escala = SIZE_SCALES[size] || 1.0
+  gsap.to(cakeRoot.scale, {
+    x: escala, y: escala, z: escala,
     duration: 1.2,
     ease: 'back.out(1.7)',
   })
 
-  // Cada disco de massa sobe e gira levemente
-  const discos = cakeGroup.children.filter((c) => c.geometry && c.geometry.type === 'CylinderGeometry' && c.material.roughness === 0.88)
-  discos.forEach((disco, i) => {
+  batterMeshes.forEach((disco, i) => {
     disco.scale.set(1, 0.01, 1)
     disco.rotation.x = 0.4
     gsap.to(disco.scale, { y: 1, duration: 0.5, delay: i * 0.18, ease: 'power2.out' })
@@ -515,13 +541,14 @@ function animarMontagem() {
   })
 }
 
-function aplicarRaioX(ativo) {
-  if (!coberturaMesh) return
-  coberturaMesh.traverse((child) => {
+function aplicarCutaway(aberto) {
+  if (!frostingMesh) return
+  const alvo = aberto ? 0.15 : 1.0
+  frostingMesh.traverse((child) => {
     if (child.isMesh) {
       gsap.to(child.material, {
-        opacity: ativo ? 0.18 : 1.0,
-        transparent: ativo,
+        opacity: alvo,
+        transparent: alvo < 1,
         duration: 0.8,
         ease: 'power2.inOut',
       })
@@ -529,48 +556,50 @@ function aplicarRaioX(ativo) {
   })
 }
 
-function ativarRaioX() {
-  raioX.value = true
-  aplicarRaioX(true)
-}
+function toggleCutaway() {
+  if (cutawayTimeout) {
+    clearTimeout(cutawayTimeout)
+    cutawayTimeout = null
+  }
+  isCutawayOpen.value = !isCutawayOpen.value
+  aplicarCutaway(isCutawayOpen.value)
 
-function desativarRaioX() {
-  raioX.value = false
-  aplicarRaioX(false)
+  if (!isCutawayOpen.value) {
+    cutawayTimeout = setTimeout(() => {
+      isCutawayOpen.value = true
+      aplicarCutaway(true)
+    }, 4000)
+  }
 }
 
 function animate() {
-  requestAnimationFrame(animate)
-
-  if (!isDragging) {
-    cameraCurrentRotation += (cameraTargetRotation - cameraCurrentRotation) * 0.05
-    cameraTargetRotation += 0.0014
-  }
+  animationFrameId = requestAnimationFrame(animate)
 
   if (controls) controls.update()
   if (renderer && scene && camera) renderer.render(scene, camera)
 }
 
-containerRef.value?.addEventListener('mousedown', () => { isDragging = true })
-containerRef.value?.addEventListener('mouseup', () => { isDragging = false })
-containerRef.value?.addEventListener('mousemove', (e) => {
-  if (isDragging) cameraTargetRotation += e.movementX * 0.005
-})
+containerRef.value?.addEventListener('mousedown', () => {})
+containerRef.value?.addEventListener('mouseup', () => {})
 
-watch(() => props.tamanho, criarBolo, { deep: true })
-watch(() => props.massa, criarBolo)
-watch(() => props.recheios, criarBolo)
-watch(() => props.cobertura, criarBolo)
-watch(() => props.fraseTopo, criarBolo)
-watch(() => raioX.value, (v) => aplicarRaioX(v))
+watch(() => props.size, criarBolo)
+watch(() => props.line, criarBolo)
+watch(() => props.batter, criarBolo, { deep: true })
+watch(() => props.fillings, criarBolo, { deep: true })
+watch(() => props.frosting, criarBolo, { deep: true })
+watch(() => props.topperText, criarBolo)
 
 onMounted(() => {
   init()
   window.addEventListener('resize', onResize)
+  resizeObserver = new ResizeObserver(onResize)
+  resizeObserver.observe(containerRef.value)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
+  if (resizeObserver) resizeObserver.disconnect()
+  if (animationFrameId) cancelAnimationFrame(animationFrameId)
   if (renderer) renderer.dispose()
   if (pmremGenerator) pmremGenerator.dispose()
   if (gsap) gsap.killTweensOf([])

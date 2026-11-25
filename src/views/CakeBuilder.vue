@@ -171,12 +171,12 @@
           >
             <div class="mb-6">
               <Cake3DPreview
-                :tamanho="tamanhoSelecionado"
-                :massa="massaSelecionada"
-                :recheios="recheiosSelecionados"
-                :cobertura="coberturaSelecionada"
-                :frase-topo="fraseTopo"
-                :linha="linhaSelecionada"
+                :size="tamanhoSelecionado?.chave"
+                :line="linhaSelecionada"
+                :batter="batterSelecionado"
+                :fillings="recheiosSelecionadosMapeados"
+                :frosting="frostingSelecionado"
+                :topper-text="fraseTopo"
               />
             </div>
 
@@ -290,6 +290,37 @@ const precoCobertura = computed(() => {
 
 const precoTotal = computed(() =>
   Math.round((precoBase.value + precoCobertura.value + (comVelas.value ? 5 : 0)) * 100) / 100
+)
+
+const BATTERS_MAP = {
+  baunilha: { name: 'Baunilha', color: '#F3DFC1' },
+  chocolate: { name: 'Chocolate', color: '#4E3229' },
+  redvelvet: { name: 'Red Velvet', color: '#8E354A' },
+}
+
+const FROSTINGS_MAP = {
+  chantininho: { name: 'Chantininho Creme', color: '#F8F0E9', style: 'smooth' },
+  chantininho_rose: { name: 'Chantininho Rosé', color: '#C98291', style: 'smooth' },
+  berry: { name: 'Berry', color: '#8E5365', style: 'smooth' },
+  ganache: { name: 'Ganache Cacau', color: '#4A2E2B', style: 'drip' },
+  naked: { name: 'Naked Cake', color: '#FFFFFF', style: 'naked' },
+}
+
+const RECHEIOS_MAP = {
+  brigadeiro: { name: 'Brigadeiro', color: '#3B231C' },
+  ninho: { name: 'Ninho', color: '#FFF8EB' },
+  morango: { name: 'Morango', color: '#C95B72' },
+  doce_leite: { name: 'Doce de Leite', color: '#C68B59' },
+  maracuja: { name: 'Maracujá', color: '#E8B948' },
+  pistache: { name: 'Pistache', color: '#7A4426' },
+}
+
+const batterSelecionado = computed(() => BATTERS_MAP[massaSelecionada.value] || BATTERS_MAP.baunilha)
+
+const frostingSelecionado = computed(() => FROSTINGS_MAP[coberturaSelecionada.value] || FROSTINGS_MAP.chantininho)
+
+const recheiosSelecionadosMapeados = computed(() =>
+  recheiosSelecionados.value.map((r) => RECHEIOS_MAP[r] || RECHEIOS_MAP.ninho)
 )
 
 function adicionarSacolaBolo() {
