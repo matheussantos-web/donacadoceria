@@ -2,6 +2,12 @@
   <div class="relative w-full h-[360px] sm:h-[400px] rounded-2xl overflow-hidden border border-[#B88D91]/40 bg-gradient-to-b from-[#FFF9F5] via-[#F8F0E9] to-[#F2DFE4] shadow-inner select-none">
     <div ref="containerRef" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
 
+  <!-- Estado de carregamento do Three.js -->
+  <div v-if="!threeReady" class="absolute inset-0 flex flex-col items-center justify-center bg-brand-creme/80 backdrop-blur-sm z-20">
+    <div class="w-8 h-8 border-4 border-brand-rose/30 border-t-brand-rose rounded-full animate-spin"></div>
+    <span class="mt-3 text-[10px] text-brand-cacau/70 font-medium">Carregando modelo 3D...</span>
+  </div>
+
     <!-- Badges e botão topo (sem sobreposição) -->
     <div class="absolute top-2.5 left-2.5 right-2.5 z-10 flex items-center justify-between gap-2 pointer-events-none">
       <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-white/90 text-[#8E5365] border border-[#B88D91]/40 shadow-xs whitespace-nowrap">
@@ -30,8 +36,6 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import gsap from 'gsap'
 import {
   CAKE_SIZE_SCALES,
@@ -92,6 +96,7 @@ const currentTopper = computed(() => props.topperText || props.fraseTopo || '')
 
 const containerRef = ref(null)
 const isCutawayOpen = ref(true)
+const threeReady = ref(false) // Three.js carregado dinamicamente
 
 let scene, camera, renderer, controls, resizeObserver, animationFrameId
 let cakeRoot, frostingMesh, dripGroup, topperMesh
@@ -388,12 +393,16 @@ watch(currentTopper, (txt) => {
   topperMesh.material.needsUpdate = true
 })
 
-onMounted(() => {
+onMounted(async () => {
   const container = containerRef.value
   if (!container) return
 
   const width = container.clientWidth || 340
   const height = container.clientHeight || 380
+
+  // Importação dinâmica do Three.js (carregado apenas quando o componente é montado)
+  const THREE = await import('three')
+  const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls.js')
 
   scene = new THREE.Scene()
 
@@ -452,12 +461,39 @@ onMounted(() => {
     }
   })
   resizeObserver.observe(container)
+
+  threeReady.value = true
 })
 
 onBeforeUnmount(() => {
   if (animationFrameId) cancelAnimationFrame(animationFrameId)
   if (resizeObserver) resizeObserver.disconnect()
   if (controls) controls.dispose()
-  if (renderer) renderer.dispose()
+  if (renderer) {
+    // Liberar geometrias e materiais
+    renderer.renderLists.dispose?.()
+    // Dispose de todas as geometrias e materiais da cena
+    scene?.traverse((object) => {
+      if (object.isMesh) {
+        object.geometry.dispose()
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            object.material.forEach((m) => m.dispose())
+          } else {
+            object.material.dispose()
+          }
+        }
+      }
+    })
+    renderer.dispose()
+  }
+  scene = null
+  cakeRoot = null
+  frostingMesh = null
+  dripGroup = null
+  topperMesh = null
+  batterMeshes = []
+  fillingMeshes = []
+  rosetteMeshes = []
 })
 </script>

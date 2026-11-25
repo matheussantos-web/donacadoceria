@@ -1,10 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import CatalogView from '@/views/CatalogView.vue'
 import LoginView from '@/views/LoginView.vue'
-import AdminProductsView from '@/views/AdminProductsView.vue'
-import GestaoView from '@/views/GestaoView.vue'
 import PhotoRedirectView from '@/views/PhotoRedirectView.vue'
-import CakeBuilder from '@/views/CakeBuilder.vue'
 import { useAuth } from '@/composables/useAuth'
 
 const { isAuthenticated, authReadyPromise } = useAuth()
@@ -33,7 +30,7 @@ const router = createRouter({
     {
       path: '/admin',
       name: 'admin',
-      component: AdminProductsView,
+      component: () => import('@/views/AdminProductsView.vue'),
       meta: { layout: 'auth', requiresAuth: true, title: 'Painel — Dona Ca Doceria' },
     },
     {
@@ -41,16 +38,16 @@ const router = createRouter({
       redirect: '/',
     },
     {
-      path: '/montar-bolo',
-      name: 'montar-bolo',
-      component: CakeBuilder,
-      meta: { layout: 'default', title: 'Monte seu Bolo — Dona Ca Doceria' },
-    },
-    {
       path: '/gestao',
       name: 'gestao',
-      component: GestaoView,
+      component: () => import('@/views/GestaoView.vue'),
       meta: { layout: 'auth', requiresAuth: true, title: 'Gestão — Dona Ca Doceria' },
+    },
+    {
+      path: '/montar-bolo',
+      name: 'montar-bolo',
+      component: () => import('@/views/CakeBuilder.vue'),
+      meta: { layout: 'default', title: 'Monte seu Bolo — Dona Ca Doceria' },
     },
   ],
 })

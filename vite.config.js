@@ -57,6 +57,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('three')) return 'chunk-three'
+          if (id.includes('gsap')) return 'chunk-gsap'
+          if (id.includes('@supabase/supabase-js')) return 'chunk-supabase'
+        },
+      },
+    },
   },
   server: {
     port: 5173,
