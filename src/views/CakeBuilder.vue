@@ -248,6 +248,12 @@ import Cake3DPreview from '@/components/Cake3DPreview.vue'
 import {
   TAMANHOS, LINHAS, MASSAS, RECHEIOS, COBERTURAS, REGRAS,
 } from '@/data/products'
+import {
+  CAKE_BATTERS,
+  CAKE_FILLINGS,
+  CAKE_FROSTINGS,
+  resolveColorByName,
+} from '@/config/cakeBuilderConfig'
 
 const linhaSelecionada = ref('tradicional')
 const tamanhoSelecionado = ref(TAMANHOS[0])
@@ -292,35 +298,27 @@ const precoTotal = computed(() =>
   Math.round((precoBase.value + precoCobertura.value + (comVelas.value ? 5 : 0)) * 100) / 100
 )
 
-const BATTERS_MAP = {
-  baunilha: { name: 'Baunilha', color: '#F3DFC1' },
-  chocolate: { name: 'Chocolate', color: '#4E3229' },
-  redvelvet: { name: 'Red Velvet', color: '#8E354A' },
-}
 
-const FROSTINGS_MAP = {
-  chantininho: { name: 'Chantininho Creme', color: '#F8F0E9', style: 'smooth' },
-  chantininho_rose: { name: 'Chantininho Rosé', color: '#C98291', style: 'smooth' },
-  berry: { name: 'Berry', color: '#8E5365', style: 'smooth' },
-  ganache: { name: 'Ganache Cacau', color: '#4A2E2B', style: 'drip' },
-  naked: { name: 'Naked Cake', color: '#FFFFFF', style: 'naked' },
-}
 
-const RECHEIOS_MAP = {
-  brigadeiro: { name: 'Brigadeiro', color: '#3B231C' },
-  ninho: { name: 'Ninho', color: '#FFF8EB' },
-  morango: { name: 'Morango', color: '#C95B72' },
-  doce_leite: { name: 'Doce de Leite', color: '#C68B59' },
-  maracuja: { name: 'Maracujá', color: '#E8B948' },
-  pistache: { name: 'Pistache', color: '#7A4426' },
-}
 
-const batterSelecionado = computed(() => BATTERS_MAP[massaSelecionada.value] || BATTERS_MAP.baunilha)
 
-const frostingSelecionado = computed(() => FROSTINGS_MAP[coberturaSelecionada.value] || FROSTINGS_MAP.chantininho)
+
+
+const batterSelecionado = computed(() => {
+  const m = CAKE_BATTERS.find((b) => b.id === massaSelecionada.value) || CAKE_BATTERS[0]
+  return { name: m.name, color: m.color }
+})
+
+const frostingSelecionado = computed(() => {
+  const f = CAKE_FROSTINGS.find((f) => f.id === coberturaSelecionada.value) || CAKE_FROSTINGS[0]
+  return { name: f.name, color: f.color, style: f.style }
+})
 
 const recheiosSelecionadosMapeados = computed(() =>
-  recheiosSelecionados.value.map((r) => RECHEIOS_MAP[r] || RECHEIOS_MAP.ninho)
+  recheiosSelecionados.value.map((r) => {
+    const f = CAKE_FILLINGS.find((ff) => ff.id === r) || CAKE_FILLINGS[0]
+    return { name: f.name, color: f.color }
+  })
 )
 
 function adicionarSacolaBolo() {
